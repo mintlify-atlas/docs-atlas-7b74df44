@@ -1,0 +1,107 @@
+{
+  "projectType": "saas",
+  "projectName": "Canchas Deportivas",
+  "projectDescription": "A sports field booking management system built with ASP.NET Core MVC for managing fields, clients, and reservations",
+  "theme": "almond",
+  "primaryColor": "#22c55e",
+  "lightColor": "#86efac",
+  "darkColor": "#15803d",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart", "installation"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/field-management",
+              "features/client-management",
+              "features/reservation-system",
+              "features/user-management"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/data-layer",
+              "architecture/business-layer",
+              "architecture/presentation-layer"
+            ]
+          },
+          {
+            "group": "Database",
+            "pages": [
+              "database/schema",
+              "database/stored-procedures",
+              "database/configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Controllers",
+            "pages": [
+              "api/canchas-controller",
+              "api/clientes-controller",
+              "api/reservas-controller"
+            ]
+          },
+          {
+            "group": "Entities",
+            "pages": [
+              "api/entities/canchas",
+              "api/entities/clientes",
+              "api/entities/reservas",
+              "api/entities/usuarios"
+            ]
+          },
+          {
+            "group": "Business Logic",
+            "pages": [
+              "api/business/canchas",
+              "api/business/clientes",
+              "api/business/reservas"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Sports field CRUD operations with type and pricing",
+    "Client management with contact information",
+    "Reservation scheduling with time slots and field assignment",
+    "User authentication and management",
+    "Search and filter reservations by client name",
+    "Three-tier architecture (Presentation, Business, Data layers)",
+    "SQL Server integration with stored procedures"
+  ],
+  "publicApiSurface": [
+    "CanchasController.ListarCanchas()",
+    "CanchasController.AgregarCancha(CE_Canchas)",
+    "CanchasController.Actualizar(CE_Canchas)",
+    "CanchasController.Eliminar(int)",
+    "ClientesController.Listar()",
+    "ClientesController.Insertar(CE_Clientes)",
+    "ClientesController.Actualizar(CE_Clientes)",
+    "ClientesController.Eliminar(int)",
+    "ReservasController.ListarReservas()",
+    "ReservasController.InsertarReservas(ReservaViewModel)",
+    "ReservasController.Actualizar(CE_Reservas)",
+    "ReservasController.Eliminar(int)",
+    "ReservasController.BuscarReservaNombre(string)",
+    "CN_Canchas.ListarCanchas()",
+    "CN_Clientes.Listar()",
+    "CN_Reservas.Listar()",
+    "CD_conexion.abrir_conexion()",
+    "CD_conexion.cerrar_conexion()"
+  ]
+}
