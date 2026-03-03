@@ -1,0 +1,65 @@
+---
+title: 'CE_Usuarios'
+description: 'Entity representing system users who manage reservations'
+---
+
+## Overview
+
+The `CE_usuarios` entity represents a system user who has access to manage the sports court reservation system. Users can create and manage reservations on behalf of clients.
+
+<Note>
+  The class name uses lowercase 'usuarios' (`CE_usuarios`) in the source code, which differs from the Pascal case naming convention used in other entities.
+</Note>
+
+## Properties
+
+<ParamField name="IdUsuario" type="int" required>
+  Unique identifier for the user
+</ParamField>
+
+<ParamField name="Nombre" type="string">
+  Username or full name of the system user
+</ParamField>
+
+<ParamField name="Clave" type="string">
+  Password for user authentication (should be hashed in production)
+</ParamField>
+
+<ParamField name="Estado" type="bool" required>
+  Indicates if the user account is active (`true`) or disabled (`false`)
+</ParamField>
+
+## Entity Definition
+
+```csharp
+public class CE_usuarios
+{
+    public int IdUsuario { get; set; }
+    public string? Nombre { get; set; }
+    public string? Clave { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+## Usage Example
+
+```csharp
+// Creating a new user
+var usuario = new CE_usuarios
+{
+    IdUsuario = 1,
+    Nombre = "admin",
+    Clave = "hashed_password_here",
+    Estado = true
+};
+```
+
+## Security Considerations
+
+<Warning>
+  The `Clave` property stores password information. Ensure that passwords are properly hashed using secure hashing algorithms (e.g., bcrypt, PBKDF2) before storing them in the database. Never store plain-text passwords.
+</Warning>
+
+## Related Entities
+
+- [CE_Reservas](/api/entities/reservas) - Reservations created by users

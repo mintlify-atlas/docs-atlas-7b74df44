@@ -1,0 +1,108 @@
+---
+title: 'CE_Canchas'
+description: 'Entity representing sports courts (canchas) in the system'
+---
+
+## Overview
+
+The `CE_Canchas` entity represents a sports court in the system. It contains information about the court's name, type, pricing, and availability status.
+
+## Properties
+
+<ParamField name="IdCancha" type="int" required>
+  Unique identifier for the sports court
+</ParamField>
+
+<ParamField name="Nombre" type="string">
+  Name of the sports court
+</ParamField>
+
+<ParamField name="Tipo" type="string">
+  Type of sports court (e.g., football, basketball, tennis)
+</ParamField>
+
+<ParamField name="PrecioPorHora" type="decimal" required>
+  Price per hour for renting the court
+</ParamField>
+
+<ParamField name="Estado" type="string">
+  Current status of the court (e.g., "Disponible", "En mantenimiento")
+</ParamField>
+
+## Entity Definition
+
+```csharp
+public class CE_Canchas
+{
+    public int IdCancha { get; set; }
+    public string? Nombre { get; set; }
+    public string? Tipo { get; set; }
+    public decimal PrecioPorHora { get; set; }
+    public string? Estado { get; set; }
+}
+```
+
+## Related Entities
+
+### CE_EstadosReservas
+
+Represents the reservation status for courts.
+
+<ParamField name="IdEstado" type="int" required>
+  Unique identifier for the status
+</ParamField>
+
+<ParamField name="Estado" type="bool" required>
+  Boolean flag indicating if the status is active
+</ParamField>
+
+```csharp
+public class CE_EstadosReservas
+{
+    public int IdEstado { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+## ViewModels
+
+### CanchaViewModel
+
+View model used for court management operations, combining a single court with a list of all available courts.
+
+<ParamField name="Canchas" type="CE_Canchas" required>
+  Single court instance for operations
+</ParamField>
+
+<ParamField name="ListaCanchas" type="List<CE_Canchas>" required>
+  Collection of all sports courts in the system
+</ParamField>
+
+```csharp
+public class CanchaViewModel
+{
+    public CE_Canchas Canchas { get; set; }
+    public List<CE_Canchas> ListaCanchas { get; set; }
+}
+```
+
+## Usage Example
+
+```csharp
+// Creating a new court
+var cancha = new CE_Canchas
+{
+    IdCancha = 1,
+    Nombre = "Cancha Fútbol 1",
+    Tipo = "Fútbol",
+    PrecioPorHora = 50.00m,
+    Estado = "Disponible"
+};
+
+// Using the ViewModel
+var viewModel = new CanchaViewModel
+{
+    Canchas = cancha,
+    ListaCanchas = new List<CE_Canchas>()
+};
+```

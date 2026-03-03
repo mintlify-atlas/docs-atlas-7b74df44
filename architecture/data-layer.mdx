@@ -1,0 +1,395 @@
+---
+title: "Data Access Layer"
+description: "Database operations and connection management in capa_dato"
+---
+
+## Overview
+
+The **Data Access Layer** (capa_dato) is responsible for all database interactions in the Canchas Deportivas application. This layer abstracts the database operations and provides a clean interface for the business layer to work with data.
+
+## Responsibilities
+
+The data layer handles:
+
+- Database connection management
+- Executing stored procedures
+- Mapping database results to entity objects
+- CRUD operations (Create, Read, Update, Delete)
+- Parameterized queries to prevent SQL injection
+
+## Connection Management
+
+### CD_conexion Class
+
+The `CD_conexion` class provides centralized database connection management:
+
+```csharp
+using Microsoft.Data.SqlClient;
+
+namespace capa_dato
+{
+    public class CD_conexion
+    {
+        private readonly SqlConnection conexion = new SqlConnection(
+            "Data Source=JONATHANCASTILL\\SQLEXPRESS;" +
+            "Initial Catalog=DB_canchasdeportivas;" +
+            "Integrated Security=True;" +
+            "Encrypt=True;" +
+            "Trust Server Certificate=True"
+        );
+
+        public SqlConnection abrir_conexion()
+        {
+            if (conexion.State == System.Data.ConnectionState.Closed)
+            {
+                conexion.Open();
+            }
+            return conexion;
+        }
+
+        public SqlConnection cerrar_conexion() 
+        {
+            if (conexion.State == System.Data.ConnectionState.Open)
+            {
+                conexion.Close();
+            }
+            return conexion;
+        }
+    }
+}
+```
+
+<Note>
+  The connection string uses **Windows Integrated Security** and connects to a SQL Server Express instance. In production, consider using a configuration file or environment variables for the connection string.
+</Note>
+
+## Data Access Classes
+
+Each domain entity has a corresponding data access class:
+
+<CardGroup cols={3}>
+  <Card title="CD_Canchas" icon="futbol">
+    Manages soccer field data operations
+  </Card>
+  <Card title="CD_Clientes" icon="users">
+    Manages client data operations
+  </Card>
+  <Card title="CD_Reservas" icon="calendar">
+    Manages reservation data operations
+  </Card>
+</CardGroup>
+
+## CRUD Operations Pattern
+
+All data access classes follow a consistent pattern for CRUD operations.
+
+### Create (Insert)
+
+Example from `CD_Canchas.cs:88-103`:
+
+```csharp
+public void AgregarCancha(CE_Canchas cE_Canchas)
+{
+    using (var conexionAbierta = conexion.abrir_conexion())
+    {
+        using (var comando = new SqlCommand("SP_Canchas_Insert", conexionAbierta))
+        {
+            comando.CommandType = CommandType.StoredProcedure;
+            comando.Parameters.AddWithValue("@Nombre", cE_Canchas.Nombre);
+            comando.Parameters.AddWithValue("@Tipo", cE_Canchas.Tipo);
+            comando.Parameters.AddWithValue("@PrecioPorHora", cE_Canchas.PrecioPorHora);
+           
+            comando.ExecuteNonQuery();
+        }
+    }
+}
+```
+
+### Read (List)
+
+Example from `CD_Canchas.cs:16-49`:
+
+```csharp
+public List<CE_Canchas> Listar()
+{
+    var ListarCanchas = new List<CE_Canchas>();
+
+    using (var conexionAbierta = conexion.abrir_conexion())
+    {
+        using (var comando = new SqlCommand("SP_Canchas_List", conexionAbierta))
+        {
+            comando.CommandType = System.Data.CommandType.StoredProcedure;
+            using (var lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    ListarCanchas.Add(new CE_Canchas
+                    {
+                        IdCancha = Convert.ToInt32(lector["IdCancha"]),
+                        Nombre = lector["Nombre"].ToString(),
+                        Tipo = lector["Tipo"].ToString(),
+                        PrecioPorHora = Convert.ToDecimal(lector["PrecioPorHora"]),
+                        Estado = lector["Estado"].ToString()
+                    });
+                }
+            }
+        }
+        return ListarCanchas;
+    }
+}
+```
+
+### Update
+
+Example from `CD_Canchas.cs:51-67`:
+
+```csharp
+public void ActualizarCancha(CE_Canchas cE_Canchas)
+{
+    using (var conexionAbierta = conexion.abrir_conexion())
+    {
+        using (var comando = new SqlCommand("SP_Canchas_Update", conexionAbierta))
+        {
+            comando.CommandType = CommandType.StoredProcedure;
+            comando.Parameters.AddWithValue("@IdCancha", cE_Canchas.IdCancha);
+            comando.Parameters.AddWithValue("@Nombre", cE_Canchas.Nombre);
+            comando.Parameters.AddWithValue("@Tipo", cE_Canchas.Tipo);
+            comando.Parameters.AddWithValue("@PrecioPorHora", cE_Canchas.PrecioPorHora);
+            
+            comando.ExecuteNonQuery();
+        }
+    }
+}
+```
+
+### Delete
+
+Example from `CD_Canchas.cs:70-86`:
+
+```csharp
+public void EliminarCancha(int id)
+{
+    using (SqlCommand comando = new SqlCommand("SP_Canchas_Delete ", conexion.abrir_conexion()))
+    {
+        comando.CommandType = CommandType.StoredProcedure;
+        comando.Parameters.Add(new SqlParameter("@Id", id));
+        comando.ExecuteNonQuery();
+    }
+}
+```
+
+## CD_Clientes Class
+
+The `CD_Clientes` class manages client data with similar CRUD operations:
+
+```csharp
+namespace capa_dato
+{
+    public class CD_Clientes
+    {
+        CD_conexion conexion = new CD_conexion();
+
+        public List<CE_Clientes> ListarClientes() { }
+        public void InsertarClientes(CE_Clientes cE_Clientes) { }
+        public void ActualizarClientes(CE_Clientes cE_Clientes) { }
+        public void EliminarClientes(int Id) { }
+    }
+}
+```
+
+Key features from `capa_dato/CD_Clientes.cs`:
+
+- Uses `SP_Clientes_List`, `SP_Clientes_Insert`, `SP_Clientes_Update`, `SP_Clientes_Delete` stored procedures
+- Maps database columns to `CE_Clientes` entity properties
+- Handles boolean `Estado` (active/inactive) field
+
+## CD_Reservas Class
+
+The `CD_Reservas` class is the most complex data access class, managing reservations:
+
+```csharp
+namespace capa_dato
+{
+    public class CD_Reservas
+    {
+        CD_conexion conexion = new CD_conexion();
+
+        public List<CE_Reservas> Listar() { }
+        public List<CE_Reservas> ListarNombre(string BuscarNombreReserva) { }
+        public void InsertarReserva(ReservaViewModel viewModel) { }
+        public void ActualizarReserva(CE_Reservas cE_Reservas) { }
+        public void EliminarReserva(int id) { }
+    }
+}
+```
+
+### Advanced Features
+
+#### Filtered Search
+
+The `ListarNombre` method provides search functionality (from `CD_Reservas.cs:56-95`):
+
+```csharp
+public List<CE_Reservas> ListarNombre(string BuscarNombreReserva)
+{
+    var ListarReserva = new List<CE_Reservas>();
+
+    using (var conexionAbierta = conexion.abrir_conexion())
+    {
+        using (var comando = new SqlCommand("SP_Listar_Reservas_Nombre", conexionAbierta))
+        {
+            comando.CommandType = System.Data.CommandType.StoredProcedure;
+            comando.Parameters.Add(new SqlParameter("@Buscar", BuscarNombreReserva));
+            using (var lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    // Map results to CE_Reservas objects
+                    ListarReserva.Add(new CE_Reservas { /* ... */ });
+                }
+            }
+        }
+        return ListarReserva;
+    }
+}
+```
+
+#### Complex Entity Mapping
+
+Reservations include joined data from multiple tables:
+
+```csharp
+ListarReserva.Add(new CE_Reservas
+{
+    IdReserva = Convert.ToInt32(lector["IdReserva"]),
+    IdCancha = Convert.ToInt32(lector["IdCancha"]),
+    IdCliente = Convert.ToInt32(lector["IdCliente"]),
+    IdUsuario = Convert.ToInt32(lector["IdUsuario"]),
+    FechaReserva = Convert.ToDateTime(lector["FechaReserva"]),
+    HoraInicio = (TimeSpan)(lector["HoraInicio"]),
+    HoraFin = (TimeSpan)(lector["HoraFin"]),
+    NombreCliente = lector["Nombre"].ToString(),
+    Comentario = lector["Comentario"].ToString(),
+    Estado = Convert.ToBoolean(lector["Estado"]),
+    NombreCancha = lector["NombreCancha"].ToString()
+});
+```
+
+## Design Patterns
+
+### Using Statement Pattern
+
+All data access methods use the `using` statement to ensure proper resource disposal:
+
+```csharp
+using (var conexionAbierta = conexion.abrir_conexion())
+{
+    using (var comando = new SqlCommand("StoredProcedure", conexionAbierta))
+    {
+        // Database operations
+    }
+    // Connection automatically closed and disposed
+}
+```
+
+<Info>
+  The `using` statement ensures that database connections and commands are properly disposed even if an exception occurs.
+</Info>
+
+### Stored Procedures
+
+All database operations use stored procedures:
+
+**Benefits:**
+- **Security**: Prevents SQL injection attacks
+- **Performance**: Pre-compiled execution plans
+- **Maintainability**: Database logic separated from application code
+- **Reusability**: Can be called from multiple applications
+
+### Parameterized Queries
+
+All parameters use `AddWithValue` to safely pass values:
+
+```csharp
+comando.Parameters.AddWithValue("@IdCancha", cE_Canchas.IdCancha);
+comando.Parameters.AddWithValue("@Nombre", cE_Canchas.Nombre);
+```
+
+## Best Practices
+
+<Check>**Always use parameterized queries** to prevent SQL injection</Check>
+<Check>**Use using statements** for automatic resource cleanup</Check>
+<Check>**Centralize connection management** in a single class</Check>
+<Check>**Use stored procedures** for all database operations</Check>
+<Check>**Map results to entity objects** rather than passing raw data</Check>
+
+<Warning>
+  Never concatenate user input directly into SQL strings. Always use parameters.
+</Warning>
+
+## Common Patterns
+
+### Connection Instance
+
+Each data access class creates a connection instance:
+
+```csharp
+public class CD_Canchas
+{
+    CD_conexion conexion = new CD_conexion();
+    // ...
+}
+```
+
+### Command Type
+
+All commands specify `StoredProcedure` as the command type:
+
+```csharp
+comando.CommandType = CommandType.StoredProcedure;
+```
+
+### Data Reader
+
+For SELECT operations, use `ExecuteReader()` with a while loop:
+
+```csharp
+using (var lector = comando.ExecuteReader())
+{
+    while (lector.Read())
+    {
+        // Process each row
+    }
+}
+```
+
+### Non-Query Operations
+
+For INSERT, UPDATE, DELETE, use `ExecuteNonQuery()`:
+
+```csharp
+comando.ExecuteNonQuery();
+```
+
+## Layer Dependencies
+
+The data layer depends on:
+
+- **Microsoft.Data.SqlClient**: Database connectivity
+- **capa_entidad**: Entity classes for data transfer
+- **SQL Server Database**: The persistence layer
+
+The data layer is used by:
+
+- **capa_negocio**: Business layer classes that orchestrate operations
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Business Layer" icon="brain" href="/architecture/business-layer">
+    Learn how the business layer uses these data access classes
+  </Card>
+  <Card title="Entity Classes" icon="cube" href="/api/entities/canchas">
+    Explore the entity classes used for data transfer
+  </Card>
+</CardGroup>

@@ -1,0 +1,387 @@
+---
+title: 'Stored Procedures'
+description: 'SQL Server stored procedures used by the Canchas Deportivas application'
+---
+
+## Overview
+
+The application uses SQL Server stored procedures for all database operations. This approach provides better security, performance, and maintainability.
+
+## User Stored Procedures
+
+### SP_Usuarios_List
+
+Retrieves all users from the database.
+
+**Parameters**: None
+
+**Returns**:
+- IdUsuario (int)
+- Nombre (nvarchar)
+- Clave (nvarchar)
+- Estado (bit)
+
+**Usage Example**:
+
+```csharp
+using (var comando = new SqlCommand("SP_Usuarios_List", conexionAbierta))
+{
+    comando.CommandType = CommandType.StoredProcedure;
+    using (var lector = comando.ExecuteReader())
+    {
+        while (lector.Read())
+        {
+            // Process results
+        }
+    }
+}
+```
+
+### SP_Usuarios_Insert
+
+Inserts a new user into the database.
+
+**Parameters**:
+- `@NombreUsuario` (nvarchar) - Username
+- `@Contrasena` (nvarchar) - Password
+- `@Estado` (bit) - Active status
+
+**Returns**: None (ExecuteNonQuery)
+
+**Usage Example**:
+
+```csharp
+using (var comando = new SqlCommand("SP_Usuarios_Insert", conexionAbierta))
+{
+    comando.CommandType = CommandType.StoredProcedure;
+    comando.Parameters.AddWithValue("@NombreUsuario", usuario.Nombre);
+    comando.Parameters.AddWithValue("@Contrasena", usuario.Clave);
+    comando.Parameters.AddWithValue("@Estado", usuario.Estado);
+    comando.ExecuteNonQuery();
+}
+```
+
+### SP_Usuarios_Update
+
+Updates an existing user's information.
+
+**Parameters**:
+- `@IdUsuario` (int) - User ID
+- `@NombreUsuario` (nvarchar) - Username
+- `@Contrasena` (nvarchar) - Password
+- `@Estado` (bit) - Active status
+
+**Returns**: None (ExecuteNonQuery)
+
+### SP_Usuarios_Delete
+
+Deletes a user from the database.
+
+**Parameters**:
+- `@IdUsuario` (int) - User ID to delete
+
+**Returns**: None (ExecuteNonQuery)
+
+## Client Stored Procedures
+
+### SP_Clientes_List
+
+Retrieves all clients from the database.
+
+**Parameters**: None
+
+**Returns**:
+- IdCliente (int)
+- Nombre (nvarchar)
+- Telefono (nvarchar)
+- Correo (nvarchar)
+- Estado (bit)
+
+### SP_Clientes_Insert
+
+Inserts a new client into the database.
+
+**Parameters**:
+- `@Nombre` (nvarchar) - Client name
+- `@Telefono` (nvarchar) - Phone number
+- `@Correo` (nvarchar) - Email address
+
+**Returns**: None (ExecuteNonQuery)
+
+**Usage Example**:
+
+```csharp
+using (var comando = new SqlCommand("SP_Clientes_Insert", conexionAbierta))
+{
+    comando.CommandType = CommandType.StoredProcedure;
+    comando.Parameters.AddWithValue("@Nombre", cliente.Nombre);
+    comando.Parameters.AddWithValue("@Telefono", cliente.Telefono);
+    comando.Parameters.AddWithValue("@Correo", cliente.Correo);
+    comando.ExecuteNonQuery();
+}
+```
+
+### SP_Clientes_Update
+
+Updates an existing client's information.
+
+**Parameters**:
+- `@IdCliente` (int) - Client ID
+- `@Nombre` (nvarchar) - Client name
+- `@Telefono` (nvarchar) - Phone number
+- `@Correo` (nvarchar) - Email address
+- `@Estado` (bit) - Active status
+
+**Returns**: None (ExecuteNonQuery)
+
+### SP_Clientes_Delete
+
+Deletes a client from the database.
+
+**Parameters**:
+- `@id` (int) - Client ID to delete
+
+**Returns**: None (ExecuteNonQuery)
+
+## Court Stored Procedures
+
+### SP_Canchas_List
+
+Retrieves all sports courts from the database.
+
+**Parameters**: None
+
+**Returns**:
+- IdCancha (int)
+- Nombre (nvarchar)
+- Tipo (nvarchar)
+- PrecioPorHora (decimal)
+- Estado (nvarchar)
+
+### SP_Canchas_Insert
+
+Inserts a new court into the database.
+
+**Parameters**:
+- `@Nombre` (nvarchar) - Court name
+- `@Tipo` (nvarchar) - Court type
+- `@PrecioPorHora` (decimal) - Hourly price
+
+**Returns**: None (ExecuteNonQuery)
+
+**Usage Example**:
+
+```csharp
+using (var comando = new SqlCommand("SP_Canchas_Insert", conexionAbierta))
+{
+    comando.CommandType = CommandType.StoredProcedure;
+    comando.Parameters.AddWithValue("@Nombre", cancha.Nombre);
+    comando.Parameters.AddWithValue("@Tipo", cancha.Tipo);
+    comando.Parameters.AddWithValue("@PrecioPorHora", cancha.PrecioPorHora);
+    comando.ExecuteNonQuery();
+}
+```
+
+### SP_Canchas_Update
+
+Updates an existing court's information.
+
+**Parameters**:
+- `@IdCancha` (int) - Court ID
+- `@Nombre` (nvarchar) - Court name
+- `@Tipo` (nvarchar) - Court type
+- `@PrecioPorHora` (decimal) - Hourly price
+
+**Returns**: None (ExecuteNonQuery)
+
+### SP_Canchas_Delete
+
+Deletes a court from the database.
+
+**Parameters**:
+- `@Id` (int) - Court ID to delete
+
+**Returns**: None (ExecuteNonQuery)
+
+## Reservation Stored Procedures
+
+### SP_Reservas_List
+
+Retrieves all reservations with joined data.
+
+**Parameters**: None
+
+**Returns**:
+- IdReserva (int)
+- IdCancha (int)
+- IdCliente (int)
+- IdUsuario (int)
+- FechaReserva (datetime)
+- HoraInicio (time)
+- HoraFin (time)
+- Nombre (nvarchar) - Client name
+- Comentario (nvarchar)
+- Estado (bit)
+- NombreCancha (nvarchar) - Court name
+
+### SP_Listar_Reservas_Nombre
+
+Filters reservations by client name.
+
+**Parameters**:
+- `@Buscar` (nvarchar) - Search term for client name
+
+**Returns**:
+- IdReserva (int)
+- IdCancha (int)
+- IdCliente (int)
+- IdUsuario (int)
+- FechaReserva (datetime)
+- HoraInicio (time)
+- HoraFin (time)
+- NombreCliente (nvarchar)
+- Comentario (nvarchar)
+- Estado (bit)
+- NombreCancha (nvarchar)
+
+**Usage Example**:
+
+```csharp
+using (var comando = new SqlCommand("SP_Listar_Reservas_Nombre", conexionAbierta))
+{
+    comando.CommandType = CommandType.StoredProcedure;
+    comando.Parameters.Add(new SqlParameter("@Buscar", nombreCliente));
+    using (var lector = comando.ExecuteReader())
+    {
+        // Process filtered results
+    }
+}
+```
+
+### SP_Reservas_Insert
+
+Inserts a new reservation into the database.
+
+**Parameters**:
+- `@IdCancha` (int) - Court ID
+- `@IdCliente` (int) - Client ID
+- `@IdUsuario` (int) - User ID who created the reservation
+- `@FechaReserva` (datetime) - Reservation date
+- `@HoraInicio` (time) - Start time
+- `@HoraFin` (time) - End time
+- `@Comentario` (nvarchar) - Additional notes
+
+**Returns**: None (ExecuteNonQuery)
+
+**Usage Example**:
+
+```csharp
+using (var comando = new SqlCommand("SP_Reservas_Insert", conexionAbierta))
+{
+    comando.CommandType = CommandType.StoredProcedure;
+    comando.Parameters.AddWithValue("@IdCancha", reserva.IdCancha);
+    comando.Parameters.AddWithValue("@IdCliente", reserva.IdCliente);
+    comando.Parameters.AddWithValue("@IdUsuario", reserva.IdUsuario);
+    comando.Parameters.AddWithValue("@FechaReserva", reserva.FechaReserva);
+    comando.Parameters.AddWithValue("@HoraInicio", reserva.HoraInicio);
+    comando.Parameters.AddWithValue("@HoraFin", reserva.HoraFin);
+    comando.Parameters.AddWithValue("@Comentario", reserva.Comentario);
+    comando.ExecuteNonQuery();
+}
+```
+
+### SP_Reservas_Update
+
+Updates an existing reservation.
+
+**Parameters**:
+- `@IdReserva` (int) - Reservation ID
+- `@IdCancha` (int) - Court ID
+- `@IdCliente` (int) - Client ID
+- `@IdUsuario` (int) - User ID
+- `@FechaReserva` (datetime) - Reservation date
+- `@HoraInicio` (time) - Start time
+- `@HoraFin` (time) - End time
+- `NombreCliente` (nvarchar) - Client name
+- `@Comentario` (nvarchar) - Additional notes
+- `@Estado` (bit) - Active status
+
+**Returns**: None (ExecuteNonQuery)
+
+### SP_Reservas_Delete
+
+Deletes a reservation from the database.
+
+**Parameters**:
+- `@Id` (int) - Reservation ID to delete
+
+**Returns**: None (ExecuteNonQuery)
+
+## Reservation Types Stored Procedures
+
+### SP_TiposReservas_List
+
+Retrieves all reservation types.
+
+**Parameters**: None
+
+**Returns**:
+- IdReserva (int)
+- IdCancha (int)
+- IdCliente (int)
+- IdUsuario (int)
+- FechaReserva (datetime)
+- HoraInicio (time)
+- HoraFin (time)
+- IdEstado (int)
+- Comentario (nvarchar)
+
+### SP_TiposReservas_Insert
+
+Inserts a new reservation type.
+
+**Parameters**:
+- `@IdCancha` (int)
+- `@IdCliente` (int)
+- `@IdUsuario` (int)
+- `@FechaReserva` (datetime)
+- `@HoraInicio` (time)
+- `@HoraFin` (time)
+- `@IdEstado` (int)
+- `@Comentario` (nvarchar)
+
+**Returns**: None (ExecuteNonQuery)
+
+### SP_TiposReservas_Update
+
+Updates an existing reservation type.
+
+**Parameters**:
+- `@IdReserva` (int)
+- `@IdCancha` (int)
+- `@IdCliente` (int)
+- `@IdUsuario` (int)
+- `@FechaReserva` (datetime)
+- `@HoraInicio` (time)
+- `@HoraFin` (time)
+- `@IdEstado` (int)
+- `@Comentario` (nvarchar)
+
+**Returns**: None (ExecuteNonQuery)
+
+### SP_TiposReservas_Delete
+
+Deletes a reservation type.
+
+**Parameters**:
+- `@IdReserva` (int) - Reservation type ID to delete
+
+**Returns**: None (ExecuteNonQuery)
+
+## Best Practices
+
+1. **Always use parameterized queries** - The application consistently uses `SqlParameter` or `AddWithValue` to prevent SQL injection
+2. **Use CommandType.StoredProcedure** - Explicitly set the command type for clarity
+3. **Close connections** - The data access layer consistently closes connections after operations
+4. **Use using statements** - Ensures proper disposal of database resources
+5. **Handle exceptions** - Implement try-catch blocks in your business logic layer

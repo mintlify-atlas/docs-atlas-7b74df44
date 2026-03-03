@@ -1,0 +1,505 @@
+---
+title: 'Reservation System'
+description: 'Book and manage field reservations with clients'
+icon: 'calendar-check'
+---
+
+## Overview
+
+The Reservation System is the core feature that links clients with sports fields, managing booking schedules, time slots, and reservation details.
+
+## Reservation Entity
+
+Reservations are represented by the `CE_Reservas` entity:
+
+```csharp capa_entidad/CE_Reservas.cs
+public class CE_Reservas
+{
+    public int IdReserva { get; set; }
+    public int IdCancha { get; set; }
+    public int IdCliente { get; set; }
+    public int IdUsuario { get; set; }
+    public DateTime FechaReserva { get; set; }
+    public TimeSpan HoraInicio { get; set; }
+    public TimeSpan HoraFin { get; set; }
+    public string? NombreCliente { get; set; }
+    public string? NombreCancha { get; set; }
+    public string? Comentario { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+<Note>
+The entity includes foreign keys to link with fields, clients, and users, plus denormalized names for efficient display.
+</Note>
+
+## Reservation ViewModel
+
+A ViewModel combines reservation data with lookup lists:
+
+```csharp capa_entidad/CE_Reservas.cs
+public class ReservaViewModel
+{
+    public CE_Reservas Reserva { get; set; }
+    public List<CE_Clientes> ListaClientes { get; set; }
+    public List<CE_Canchas> ListaCanchas { get; set; }
+}
+```
+
+This pattern enables dropdown selection of clients and fields in the reservation form.
+
+## List All Reservations
+
+### Controller Action
+
+The `ListarReservas` action retrieves all reservations:
+
+```csharp capa_presentacion/Controllers/ReservasController.cs
+public ActionResult ListarReservas()
+{
+    try
+    {
+        if (!ModelState.IsValid)
+        {
+            throw new Exception("El estado del modelo no es válido.");
+        }
+        var olista = Reservas.Listar();
+        return View(olista);
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error al obtener la lista de reservas: " + ex.Message;
+        return View(new List<CE_Reservas>());
+    }
+}
+```
+
+### View Interface
+
+The list view displays reservations with search functionality:
+
+```cshtml Views/Reservas/ListarReservas.cshtml
+<div class="card shadow border-0">
+    <div class="card-header bg-primary text-white py-3">
+        <h3 class="card-title mb-0">
+            <i class="bi bi-calendar-range me-2"></i>Gestión de Reservas
+        </h3>
+        <a asp-action="InsertarReservas" class="btn btn-light text-primary fw-bold">
+            <i class="bi bi-plus-lg"></i> Nueva Reserva
+        </a>
+    </div>
+
+    <div class="card-body p-4">
+        <!-- Search Form -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <form asp-action="BuscarReservaNombre" method="post">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="BuscarReservaNombre" 
+                               class="form-control" 
+                               placeholder="Buscar por nombre de cliente..." />
+                        <button type="submit" class="btn btn-primary">Buscar</button>
+                        <a asp-action="ListarReservas" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reservations Table -->
+        <table class="table table-hover table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Cod.</th>
+                    <th>Cancha</th>
+                    <th>Fecha</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Cliente</th>
+                    <th>Comentario</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var reserva in Model)
+                {
+                    <tr>
+                        <td>@reserva.IdReserva</td>
+                        <td>
+                            <span class="badge bg-info">
+                                @reserva.NombreCancha
+                            </span>
+                        </td>
+                        <td>@reserva.FechaReserva.ToShortDateString()</td>
+                        <td>@reserva.HoraInicio</td>
+                        <td>@reserva.HoraFin</td>
+                        <td>@reserva.NombreCliente</td>
+                        <td>@reserva.Comentario</td>
+                        <td>
+                            <a asp-action="Actualizar" 
+                               asp-route-id="@reserva.IdReserva" 
+                               class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <form asp-action="Eliminar" method="post" 
+                                  asp-route-id="@reserva.IdReserva">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+```
+
+## Create a New Reservation
+
+<Steps>
+  <Step title="Prepare the Form">
+    Load the ViewModel with client and field lists:
+    
+    ```csharp capa_presentacion/Controllers/ReservasController.cs
+    public ActionResult InsertarReservas()
+    {
+        // Create the ViewModel
+        ReservaViewModel modelo = new ReservaViewModel();
+
+        // Populate dropdown lists
+        modelo.ListaClientes = new CN_Clientes().Listar();
+        modelo.ListaCanchas = new CN_Canchas().ListarCanchas();
+
+        // Initialize the reservation
+        modelo.Reserva = new CE_Reservas();
+
+        return View(modelo);
+    }
+    ```
+  </Step>
+  
+  <Step title="Render the Form">
+    Display the comprehensive reservation form:
+    
+    ```cshtml Views/Reservas/InsertarReservas.cshtml
+    <form action="InsertarReservas" method="post">
+        <div class="row">
+            <!-- Field Selection -->
+            <div class="col-md-6 mb-3">
+                <label asp-for="Reserva.IdCancha" class="form-label fw-bold">
+                    Cancha
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-trophy"></i>
+                    </span>
+                    <select asp-for="Reserva.IdCancha" class="form-select">
+                        <option value="">-- Seleccione una Cancha --</option>
+                        @foreach (var cancha in Model.ListaCanchas)
+                        {
+                            <option value="@cancha.IdCancha">@cancha.Nombre</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Client Selection -->
+            <div class="col-md-6 mb-3">
+                <label asp-for="Reserva.IdCliente" class="form-label fw-bold">
+                    Cliente
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-person"></i>
+                    </span>
+                    <select asp-for="Reserva.IdCliente" class="form-select">
+                        <option value="">-- Seleccione un Cliente --</option>
+                        @foreach (var cliente in Model.ListaClientes)
+                        {
+                            <option value="@cliente.IdCliente">@cliente.Nombre</option>
+                        }
+                    </select>
+                    <a asp-controller="Clientes" 
+                       asp-action="InsertarCliente" 
+                       class="btn btn-light text-primary">
+                        <i class="bi bi-person-plus-fill"></i> Nuevo Cliente
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date and Time -->
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label asp-for="Reserva.FechaReserva" 
+                       class="form-label fw-bold">Fecha</label>
+                <input type="date" asp-for="Reserva.FechaReserva" 
+                       class="form-control" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Reserva.HoraInicio" 
+                       class="form-label fw-bold">Hora Inicio</label>
+                <input type="time" asp-for="Reserva.HoraInicio" 
+                       class="form-control" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Reserva.HoraFin" 
+                       class="form-label fw-bold">Hora Fin</label>
+                <input type="time" asp-for="Reserva.HoraFin" 
+                       class="form-control" />
+            </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="mb-4">
+            <label asp-for="Reserva.Comentario" 
+                   class="form-label fw-bold">Comentarios</label>
+            <textarea asp-for="Reserva.Comentario" 
+                      class="form-control" rows="2" 
+                      placeholder="Notas sobre la reserva..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Agregar Reserva
+        </button>
+    </form>
+    ```
+  </Step>
+  
+  <Step title="Submit and Validate">
+    The POST action processes the reservation:
+    
+    ```csharp capa_presentacion/Controllers/ReservasController.cs
+    [HttpPost]
+    public ActionResult InsertarReservas(ReservaViewModel reservas)
+    {
+        try
+        {
+            if (reservas.Reserva == null)
+            {
+                return StatusCode(404, $"No se encontro el modelo");
+            }
+
+            Reservas.InsertarReservas(reservas);
+            return RedirectToAction("ListarReservas");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error al agregar la reserva: {ex.Message}");
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+<Note>
+The form includes a quick link to create new clients directly from the reservation workflow.
+</Note>
+
+## Search Reservations by Client Name
+
+### GET - Display Search Form
+
+```csharp capa_presentacion/Controllers/ReservasController.cs
+[HttpGet]
+public ActionResult BuscarReservaNombre() 
+{
+    return View();
+}
+```
+
+### POST - Execute Search
+
+```csharp
+[HttpPost]
+public ActionResult BuscarReservaNombre(string BuscarReservaNombre) 
+{
+    if (string.IsNullOrEmpty(BuscarReservaNombre)) 
+    {
+        var olis = Reservas.Listar();
+        return View(olis);
+    }
+
+    var filtro = Reservas.ListarNombre(BuscarReservaNombre);
+    return View(filtro);
+}
+```
+
+<Note>
+If no search term is provided, the method returns all reservations.
+</Note>
+
+## Update a Reservation
+
+### GET - Load Reservation Data
+
+```csharp capa_presentacion/Controllers/ReservasController.cs
+[HttpGet]
+public ActionResult Actualizar(int id)
+{
+    var oReserva = Reservas.Listar();
+    var reserva = oReserva.FirstOrDefault(c => c.IdReserva == id);
+
+    if (reserva == null)
+    {
+        return NotFound($"No se pudo actualizar el cliente con el id: {id}");
+    }
+    return View(reserva);
+}
+```
+
+### POST - Save Changes
+
+```csharp
+public ActionResult Actualizar(CE_Reservas reservas)
+{
+    try
+    {
+        if (ModelState.IsValid)
+        {
+            Reservas.Actualizar(reservas);
+            return RedirectToAction("ListarReservas");
+        }
+        Reservas.Actualizar(reservas);
+        return RedirectToAction("ListarReservas");
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Error al actualizar la cancha: {ex.Message}");
+    }
+}
+```
+
+## Delete a Reservation
+
+```csharp capa_presentacion/Controllers/ReservasController.cs
+public ActionResult Eliminar(int id)
+{
+    try
+    {
+        Reservas.Eliminar(id);
+        return RedirectToAction("ListarReservas");
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Error al eliminar la reserva: {ex.Message}");
+    }
+}
+```
+
+<Warning>
+Deleting a reservation is permanent and cannot be undone. The view includes a confirmation dialog.
+</Warning>
+
+## Business Logic Layer
+
+The business layer coordinates reservation operations:
+
+```csharp capa_negocio/CN_Reservas.cs
+public class CN_Reservas
+{
+    CD_Reservas oCD_Reservas = new CD_Reservas();
+
+    public List<CE_Reservas> Listar()
+    {
+        oCD_Reservas = new CD_Reservas();
+        return oCD_Reservas.Listar();
+    }
+
+    public void InsertarReservas(ReservaViewModel reserva)
+    {
+        oCD_Reservas.InsertarReserva(reserva);
+    }
+
+    public void Actualizar(CE_Reservas reserva)
+    {
+        oCD_Reservas.ActualizarReserva(reserva);
+    }
+
+    public void Eliminar(int id)
+    {
+        oCD_Reservas.EliminarReserva(id);
+    }
+
+    // Search by client name
+    public List<CE_Reservas> ListarNombre(string BuscarNombreReserva) 
+    {
+        return oCD_Reservas.ListarNombre(BuscarNombreReserva);
+    }
+}
+```
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Time Slot Management" icon="clock">
+    Track start and end times for each reservation using TimeSpan properties.
+  </Card>
+  
+  <Card title="Client Association" icon="link">
+    Link reservations to existing clients via foreign key relationships.
+  </Card>
+  
+  <Card title="Field Selection" icon="futbol">
+    Choose from available sports fields with dropdown selection.
+  </Card>
+  
+  <Card title="Search Functionality" icon="magnifying-glass">
+    Find reservations quickly by searching client names.
+  </Card>
+</CardGroup>
+
+## User Workflow
+
+<Steps>
+  <Step title="Access Reservations">
+    Navigate to the reservation management section.
+  </Step>
+  
+  <Step title="Create New Reservation">
+    Click "Nueva Reserva" to open the booking form.
+  </Step>
+  
+  <Step title="Select Field and Client">
+    Choose from dropdown lists or create a new client inline.
+  </Step>
+  
+  <Step title="Set Date and Time">
+    Specify the reservation date, start time, and end time.
+  </Step>
+  
+  <Step title="Add Notes">
+    Include any special comments or requirements in the notes field.
+  </Step>
+  
+  <Step title="Submit">
+    Save the reservation and return to the list view.
+  </Step>
+</Steps>
+
+## Integration Points
+
+Reservations connect multiple system components:
+
+- **Fields**: Each reservation books a specific sports field
+- **Clients**: Link to the customer making the booking
+- **Users**: Track which operator created the reservation
+- **Pricing**: Calculate costs based on field hourly rates and time duration
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Field Management" icon="futbol" href="/features/field-management">
+    Manage the fields available for booking
+  </Card>
+  <Card title="Client Management" icon="users" href="/features/client-management">
+    Manage client profiles and contact info
+  </Card>
+</CardGroup>

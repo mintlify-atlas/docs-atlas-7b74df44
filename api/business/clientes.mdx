@@ -1,0 +1,204 @@
+---
+title: 'CN_Clientes'
+description: 'Business logic for managing clients'
+---
+
+## Overview
+
+The `CN_Clientes` class provides business logic operations for managing clients in the sports courts reservation system. It handles client CRUD operations and includes null-safety checks when retrieving data from the data layer.
+
+**Namespace:** `capa_negocio`
+
+**Dependencies:**
+- `capa_entidad.CE_Clientes` - Client entity model
+- `capa_dato.CD_Clientes` - Data access layer for clients
+
+## Class Definition
+
+```csharp
+public class CN_Clientes
+{
+    CD_Clientes oCD_Clientes = new CD_Clientes();
+}
+```
+
+## Methods
+
+### Listar
+
+Retrieves a list of all clients from the database with null-safety handling.
+
+<ParamField path="return" type="List<CE_Clientes>">
+  A list of all clients in the system. Returns an empty list if no clients are found.
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Clientes cnClientes = new CN_Clientes();
+List<CE_Clientes> clientes = cnClientes.Listar();
+
+foreach (var cliente in clientes)
+{
+    Console.WriteLine($"Client: {cliente.Nombre}, Email: {cliente.Correo}");
+}
+```
+
+**Data Layer Call:**
+
+This method calls `CD_Clientes.ListarClientes()` which executes the stored procedure `SP_Clientes_List`. Includes null-safety check to return an empty list if the data layer returns null.
+
+```csharp
+public List<CE_Clientes> Listar()
+{
+    List<CE_Clientes> lista = oCD_Clientes.ListarClientes();
+    if (lista == null)
+    {
+        return new List<CE_Clientes>();
+    }
+    return lista;
+}
+```
+
+---
+
+### Insertar
+
+Adds a new client to the system.
+
+<ParamField path="cliente" type="CE_Clientes" required>
+  The client object containing:
+  - `Nombre` (string) - Client's full name
+  - `Telefono` (string) - Client's phone number
+  - `Correo` (string) - Client's email address
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Clientes cnClientes = new CN_Clientes();
+CE_Clientes nuevoCliente = new CE_Clientes
+{
+    Nombre = "Juan Pérez",
+    Telefono = "555-1234",
+    Correo = "juan.perez@email.com"
+};
+
+cnClientes.Insertar(nuevoCliente);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Clientes.InsertarClientes()` which executes the stored procedure `SP_Clientes_Insert` with the following parameters:
+- `@Nombre`
+- `@Telefono`
+- `@Correo`
+
+```csharp
+public void Insertar(CE_Clientes cliente)
+{
+    oCD_Clientes.InsertarClientes(cliente);
+}
+```
+
+---
+
+### Actualizar
+
+Updates an existing client's information.
+
+<ParamField path="cliente" type="CE_Clientes" required>
+  The client object with updated values:
+  - `IdCliente` (int) - Client ID to update
+  - `Nombre` (string) - Updated client name
+  - `Telefono` (string) - Updated phone number
+  - `Correo` (string) - Updated email address
+  - `Estado` (bool) - Client status (active/inactive)
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Clientes cnClientes = new CN_Clientes();
+CE_Clientes clienteActualizado = new CE_Clientes
+{
+    IdCliente = 1,
+    Nombre = "Juan Carlos Pérez",
+    Telefono = "555-5678",
+    Correo = "jc.perez@email.com",
+    Estado = true
+};
+
+cnClientes.Actualizar(clienteActualizado);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Clientes.ActualizarClientes()` which executes the stored procedure `SP_Clientes_Update` with parameters:
+- `@IdCliente`
+- `@Nombre`
+- `@Telefono`
+- `@Correo`
+- `@Estado`
+
+```csharp
+public void Actualizar(CE_Clientes cliente)
+{
+    oCD_Clientes.ActualizarClientes(cliente);
+}
+```
+
+---
+
+### Eliminar
+
+Deletes a client from the system.
+
+<ParamField path="id" type="int" required>
+  The ID of the client to delete
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Clientes cnClientes = new CN_Clientes();
+int idClienteEliminar = 5;
+
+cnClientes.Eliminar(idClienteEliminar);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Clientes.EliminarClientes()` which executes the stored procedure `SP_Clientes_Delete` with parameter `@id`.
+
+```csharp
+public void Eliminar(int id)
+{
+    oCD_Clientes.EliminarClientes(id);
+}
+```
+
+## Entity Model
+
+The `CE_Clientes` entity used by this business logic class:
+
+```csharp
+public class CE_Clientes
+{
+    public int IdCliente { get; set; }
+    public string? Nombre { get; set; }
+    public string? Telefono { get; set; }
+    public string? Correo { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+## Business Rules
+
+- **Null Safety**: The `Listar()` method includes null-checking to ensure an empty list is returned instead of null, preventing null reference exceptions in the presentation layer.
+- **Estado Field**: The `Estado` field is used to track whether a client is active or inactive, allowing for soft deletes instead of physical removal from the database.
+
+## Related Components
+
+- [CD_Clientes](/api/data/clientes) - Data access layer
+- [CE_Clientes](/api/entities/clientes) - Entity model

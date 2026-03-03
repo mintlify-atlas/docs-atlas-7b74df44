@@ -1,0 +1,533 @@
+---
+title: 'ReservasController'
+description: 'API reference for managing reservation operations'
+---
+
+## Overview
+
+The `ReservasController` handles all CRUD operations for reservation management in the system. It provides endpoints for listing, creating, updating, deleting, and searching reservations.
+
+**Namespace:** `capa_presentacion.Controllers`
+
+**Base Route:** `/Reservas`
+
+---
+
+## Methods
+
+### ListarReservas
+
+Retrieves a list of all reservations in the system.
+
+```csharp
+public ActionResult ListarReservas()
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Reservas/ListarReservas`
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (200):** Returns a view with `List<CE_Reservas>` containing all reservations
+- **Error:** Returns a view with an empty list and sets error message in `TempData["ErrorMessage"]`
+
+#### Response Model
+
+```csharp
+CE_Reservas {
+  int IdReserva
+  int IdCancha
+  int IdCliente
+  int IdUsuario
+  DateTime FechaReserva
+  TimeSpan HoraInicio
+  TimeSpan HoraFin
+  string NombreCliente
+  string NombreCancha
+  string Comentario
+  bool Estado
+}
+```
+
+#### Error Handling
+
+- Validates `ModelState` before processing
+- Catches exceptions and stores error message in `TempData`
+- Returns empty list on error instead of throwing
+
+#### Usage Example
+
+```csharp
+// GET /Reservas/ListarReservas
+// Returns view with list of all reservations
+```
+
+#### Source
+`Controllers/ReservasController.cs:16`
+
+---
+
+### InsertarReservas (GET)
+
+Displays the form for creating a new reservation with dropdown lists for clients and canchas.
+
+```csharp
+public ActionResult InsertarReservas()
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Reservas/InsertarReservas`
+
+#### Returns
+
+**Type:** `ActionResult`
+
+Returns a view with `ReservaViewModel` containing:
+- `Reserva`: Empty `CE_Reservas` object
+- `ListaClientes`: List of all available clients
+- `ListaCanchas`: List of all available sports fields
+
+#### View Model
+
+```csharp
+ReservaViewModel {
+  CE_Reservas Reserva
+  List<CE_Clientes> ListaClientes
+  List<CE_Canchas> ListaCanchas
+}
+```
+
+#### Usage Example
+
+```csharp
+// GET /Reservas/InsertarReservas
+// Returns view with form and dropdown data for clients and canchas
+```
+
+#### Notes
+
+- Initializes empty `CE_Reservas` object to prevent null reference errors
+- Loads client and cancha lists from business layer
+- Uses ViewModel pattern to pass multiple data collections to view
+
+#### Source
+`Controllers/ReservasController.cs:35`
+
+---
+
+### InsertarReservas (POST)
+
+Creates a new reservation in the system.
+
+```csharp
+[HttpPost]
+public ActionResult InsertarReservas(ReservaViewModel reservas)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Reservas/InsertarReservas`
+
+#### Parameters
+
+<ParamField body="reservas" type="ReservaViewModel" required>
+  The reservation view model containing the reservation data
+  
+  **Properties:**
+  - `Reserva` (CE_Reservas): The reservation object with the following fields:
+    - `IdCancha` (int): ID of the sports field
+    - `IdCliente` (int): ID of the client making the reservation
+    - `IdUsuario` (int): ID of the user creating the reservation
+    - `FechaReserva` (DateTime): Date of the reservation
+    - `HoraInicio` (TimeSpan): Start time
+    - `HoraFin` (TimeSpan): End time
+    - `Comentario` (string): Optional comments
+    - `Estado` (bool): Active status
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarReservas` action
+- **Error (404):** Reserva object is null - "No se encontro el modelo"
+- **Error (500):** Exception during creation - "Error al agregar la reserva: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="404" type="StatusCodeResult">
+  Reserva object is null
+  ```json
+  "No se encontro el modelo"
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during reservation creation
+  ```json
+  "Error al agregar la reserva: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Reservas/InsertarReservas
+// Content-Type: application/x-www-form-urlencoded
+
+var viewModel = new ReservaViewModel {
+    Reserva = new CE_Reservas {
+        IdCancha = 1,
+        IdCliente = 5,
+        IdUsuario = 1,
+        FechaReserva = DateTime.Parse("2026-03-10"),
+        HoraInicio = TimeSpan.Parse("14:00"),
+        HoraFin = TimeSpan.Parse("16:00"),
+        Comentario = "Torneo interno",
+        Estado = true
+    }
+};
+
+// On success: Redirects to /Reservas/ListarReservas
+```
+
+#### Notes
+
+- Validates that `reservas.Reserva` is not null instead of using `ModelState.IsValid`
+- Previous implementation using `CE_Reservas` directly is commented out (lines 51-70)
+- Uses ViewModel approach for better integration with dropdown-based forms
+
+#### Source
+`Controllers/ReservasController.cs:74`
+
+---
+
+### Actualizar (GET)
+
+Retrieves a specific reservation for editing.
+
+```csharp
+[HttpGet]
+public ActionResult Actualizar(int id)
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Reservas/Actualizar/{id}`
+
+#### Parameters
+
+<ParamField path="id" type="int" required>
+  The unique identifier of the reservation to update
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (200):** Returns view with the `CE_Reservas` object
+- **Error (404):** Reservation not found - "No se pudo actualizar el cliente con el id: {id}"
+
+#### Error Responses
+
+<ResponseField name="404" type="NotFoundResult">
+  Reservation with specified ID not found
+  ```json
+  "No se pudo actualizar el cliente con el id: {id}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// GET /Reservas/Actualizar/15
+// Returns view with reservation data for ID 15
+```
+
+#### Notes
+
+- Error message references "cliente" instead of "reserva" (copy-paste issue)
+
+#### Source
+`Controllers/ReservasController.cs:94`
+
+---
+
+### Actualizar (POST)
+
+Updates an existing reservation.
+
+```csharp
+public ActionResult Actualizar(CE_Reservas reservas)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Reservas/Actualizar`
+
+#### Parameters
+
+<ParamField body="reservas" type="CE_Reservas" required>
+  The reservation object with updated information
+  
+  **Properties:**
+  - `IdReserva` (int): ID of the reservation to update
+  - `IdCancha` (int): Updated sports field ID
+  - `IdCliente` (int): Updated client ID
+  - `IdUsuario` (int): User ID
+  - `FechaReserva` (DateTime): Updated date
+  - `HoraInicio` (TimeSpan): Updated start time
+  - `HoraFin` (TimeSpan): Updated end time
+  - `Comentario` (string): Updated comments
+  - `Estado` (bool): Updated status
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarReservas` action
+- **Error (500):** Exception during update - "Error al actualizar la cancha: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during reservation update
+  ```json
+  "Error al actualizar la cancha: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Reservas/Actualizar
+// Content-Type: application/x-www-form-urlencoded
+
+var reserva = new CE_Reservas {
+    IdReserva = 15,
+    IdCancha = 2,
+    IdCliente = 5,
+    IdUsuario = 1,
+    FechaReserva = DateTime.Parse("2026-03-12"),
+    HoraInicio = TimeSpan.Parse("15:00"),
+    HoraFin = TimeSpan.Parse("17:00"),
+    Comentario = "Cambio de horario",
+    Estado = true
+};
+
+// On success: Redirects to /Reservas/ListarReservas
+```
+
+#### Notes
+
+- The method updates the reservation regardless of `ModelState.IsValid` status (lines 110-116)
+- Both validation paths lead to the same update operation
+- Error message references "cancha" instead of "reserva" (copy-paste issue)
+- Missing `[HttpPost]` attribute but behaves as POST method
+
+#### Source
+`Controllers/ReservasController.cs:106`
+
+---
+
+### Eliminar
+
+Deletes a reservation from the system.
+
+```csharp
+public ActionResult Eliminar(int id)
+```
+
+#### HTTP Method
+`POST` (inferred from usage pattern)
+
+#### Route
+`/Reservas/Eliminar`
+
+#### Parameters
+
+<ParamField body="id" type="int" required>
+  The unique identifier of the reservation to delete
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarReservas` action
+- **Error (500):** Exception during deletion - "Error al eliminar la reserva: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during reservation deletion
+  ```json
+  "Error al eliminar la reserva: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Reservas/Eliminar
+// Form data: id=15
+
+// On success: Redirects to /Reservas/ListarReservas
+```
+
+#### Notes
+
+- Includes try-catch error handling
+- Returns appropriate error message to user
+- Missing `[HttpPost]` attribute
+
+#### Source
+`Controllers/ReservasController.cs:130`
+
+---
+
+### BuscarReservaNombre (GET)
+
+Displays the search form for finding reservations by client name.
+
+```csharp
+[HttpGet]
+public ActionResult BuscarReservaNombre()
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Reservas/BuscarReservaNombre`
+
+#### Returns
+
+**Type:** `ActionResult`
+
+Returns the view for searching reservations.
+
+#### Usage Example
+
+```csharp
+// GET /Reservas/BuscarReservaNombre
+// Displays the search form
+```
+
+#### Source
+`Controllers/ReservasController.cs:147`
+
+---
+
+### BuscarReservaNombre (POST)
+
+Searches for reservations by client name.
+
+```csharp
+[HttpPost]
+public ActionResult BuscarReservaNombre(string BuscarReservaNombre)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Reservas/BuscarReservaNombre`
+
+#### Parameters
+
+<ParamField body="BuscarReservaNombre" type="string">
+  The client name to search for (partial match supported)
+  
+  - If empty or null: Returns all reservations
+  - If provided: Returns filtered reservations matching the name
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+**Success (200):** Returns view with `List<CE_Reservas>` containing:
+- All reservations if search term is empty
+- Filtered reservations matching the client name if search term provided
+
+#### Usage Example
+
+```csharp
+// POST /Reservas/BuscarReservaNombre
+// Form data: BuscarReservaNombre="Juan"
+
+// Returns view with all reservations for clients named "Juan"
+```
+
+#### Search Behavior
+
+```csharp
+// Empty search term
+BuscarReservaNombre = ""
+// Result: Returns all reservations
+
+// With search term
+BuscarReservaNombre = "Juan Pérez"
+// Result: Returns reservations where NombreCliente contains "Juan Pérez"
+```
+
+#### Notes
+
+- No error handling implemented
+- Returns view (not redirect) to maintain search state
+- Searches by client name using `Reservas.ListarNombre()`
+
+#### Source
+`Controllers/ReservasController.cs:155`
+
+---
+
+## Dependencies
+
+- **Business Layer:** 
+  - `CN_Reservas` from `capa_negocio`
+  - `CN_Clientes` from `capa_negocio`
+  - `CN_Canchas` from `capa_negocio`
+- **Entity Layer:** 
+  - `CE_Reservas` from `capa_entidad`
+  - `CE_Clientes` from `capa_entidad`
+  - `CE_Canchas` from `capa_entidad`
+- **View Models:** `ReservaViewModel` from `capa_presentacion.Models`
+- **Framework:** ASP.NET Core MVC
+
+## Error Handling Strategy
+
+1. **Model Validation:** Checks `ModelState.IsValid` or null validation before processing requests
+2. **Try-Catch Blocks:** Wraps operations in exception handlers (most methods)
+3. **User Feedback:** Uses `TempData` for error messages in views
+4. **Status Codes:** Returns appropriate HTTP status codes (404, 500)
+5. **Graceful Degradation:** Returns empty lists instead of error pages when listing fails
+
+## Design Patterns
+
+- **ViewModel Pattern:** Uses `ReservaViewModel` to combine multiple entities for form dropdowns
+- **Repository Pattern:** Delegates data access to business layer (`CN_Reservas`)
+- **PRG Pattern:** Post-Redirect-Get pattern after successful mutations
+
+## Known Issues
+
+- **Error Messages:** Several methods reference wrong entity types in error messages ("cliente", "cancha" instead of "reserva")
+- **Missing Attributes:** Some POST methods missing `[HttpPost]` attribute
+- **Inconsistent Validation:** Mix of `ModelState.IsValid` checks and null checks
+- **Redundant Code:** Update methods execute regardless of validation result (lines 110-116)

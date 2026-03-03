@@ -1,0 +1,289 @@
+---
+title: 'CN_Reservas'
+description: 'Business logic for managing court reservations'
+---
+
+## Overview
+
+The `CN_Reservas` class provides business logic operations for managing sports court reservations. It handles reservation CRUD operations and includes advanced features like filtering reservations by client name.
+
+**Namespace:** `capa_negocio`
+
+**Dependencies:**
+- `capa_entidad.CE_Reservas` - Reservation entity model
+- `capa_entidad.ReservaViewModel` - View model for creating reservations
+- `capa_dato.CD_Reservas` - Data access layer for reservations
+
+## Class Definition
+
+```csharp
+public class CN_Reservas
+{
+    CD_Reservas oCD_Reservas = new CD_Reservas();
+}
+```
+
+## Methods
+
+### Listar
+
+Retrieves a list of all reservations from the database.
+
+<ParamField path="return" type="List<CE_Reservas>">
+  A list of all reservations in the system, including client and court information
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Reservas cnReservas = new CN_Reservas();
+List<CE_Reservas> reservas = cnReservas.Listar();
+
+foreach (var reserva in reservas)
+{
+    Console.WriteLine($"Reservation {reserva.IdReserva}: {reserva.NombreCliente} - {reserva.NombreCancha}");
+    Console.WriteLine($"Date: {reserva.FechaReserva:dd/MM/yyyy}, Time: {reserva.HoraInicio} - {reserva.HoraFin}");
+}
+```
+
+**Data Layer Call:**
+
+This method calls `CD_Reservas.Listar()` which executes the stored procedure `SP_Reservas_List`.
+
+```csharp
+public List<CE_Reservas> Listar()
+{
+    oCD_Reservas = new CD_Reservas();
+    return oCD_Reservas.Listar();
+}
+```
+
+---
+
+### InsertarReservas
+
+Creates a new reservation in the system using a view model that includes reservation data along with related lists.
+
+<ParamField path="reserva" type="ReservaViewModel" required>
+  The reservation view model containing:
+  - `Reserva` (CE_Reservas) - The reservation object with:
+    - `IdCancha` (int) - Court ID
+    - `IdCliente` (int) - Client ID
+    - `IdUsuario` (int) - User ID who creates the reservation
+    - `FechaReserva` (DateTime) - Reservation date
+    - `HoraInicio` (TimeSpan) - Start time
+    - `HoraFin` (TimeSpan) - End time
+    - `Comentario` (string) - Optional comments
+  - `ListaClientes` (List of CE_Clientes) - Available clients
+  - `ListaCanchas` (List of CE_Canchas) - Available courts
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Reservas cnReservas = new CN_Reservas();
+ReservaViewModel viewModel = new ReservaViewModel
+{
+    Reserva = new CE_Reservas
+    {
+        IdCancha = 1,
+        IdCliente = 5,
+        IdUsuario = 2,
+        FechaReserva = DateTime.Now.AddDays(1),
+        HoraInicio = new TimeSpan(14, 0, 0), // 2:00 PM
+        HoraFin = new TimeSpan(16, 0, 0),    // 4:00 PM
+        Comentario = "Reserva para torneo"
+    },
+    ListaClientes = listaClientes,
+    ListaCanchas = listaCanchas
+};
+
+cnReservas.InsertarReservas(viewModel);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Reservas.InsertarReserva()` which executes the stored procedure `SP_Reservas_Insert` with the following parameters:
+- `@IdCancha`
+- `@IdCliente`
+- `@IdUsuario`
+- `@FechaReserva`
+- `@HoraInicio`
+- `@HoraFin`
+- `@Comentario`
+
+```csharp
+public void InsertarReservas(ReservaViewModel reserva)
+{
+    oCD_Reservas.InsertarReserva(reserva);
+}
+```
+
+---
+
+### Actualizar
+
+Updates an existing reservation's information.
+
+<ParamField path="reserva" type="CE_Reservas" required>
+  The reservation object with updated values:
+  - `IdReserva` (int) - Reservation ID to update
+  - `IdCancha` (int) - Updated court ID
+  - `IdCliente` (int) - Updated client ID
+  - `IdUsuario` (int) - Updated user ID
+  - `FechaReserva` (DateTime) - Updated reservation date
+  - `HoraInicio` (TimeSpan) - Updated start time
+  - `HoraFin` (TimeSpan) - Updated end time
+  - `NombreCliente` (string) - Client name
+  - `Comentario` (string) - Updated comments
+  - `Estado` (bool) - Reservation status
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Reservas cnReservas = new CN_Reservas();
+CE_Reservas reservaActualizada = new CE_Reservas
+{
+    IdReserva = 10,
+    IdCancha = 2,
+    IdCliente = 5,
+    IdUsuario = 2,
+    FechaReserva = DateTime.Now.AddDays(2),
+    HoraInicio = new TimeSpan(15, 0, 0),
+    HoraFin = new TimeSpan(17, 0, 0),
+    NombreCliente = "Juan Pérez",
+    Comentario = "Horario modificado",
+    Estado = true
+};
+
+cnReservas.Actualizar(reservaActualizada);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Reservas.ActualizarReserva()` which executes the stored procedure `SP_Reservas_Update` with all reservation parameters.
+
+```csharp
+public void Actualizar(CE_Reservas reserva)
+{
+    oCD_Reservas.ActualizarReserva(reserva);
+}
+```
+
+---
+
+### Eliminar
+
+Deletes a reservation from the system.
+
+<ParamField path="id" type="int" required>
+  The ID of the reservation to delete
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Reservas cnReservas = new CN_Reservas();
+int idReservaEliminar = 10;
+
+cnReservas.Eliminar(idReservaEliminar);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Reservas.EliminarReserva()` which executes the stored procedure `SP_Reservas_Delete` with parameter `@Id`.
+
+```csharp
+public void Eliminar(int id)
+{
+    oCD_Reservas.EliminarReserva(id);
+}
+```
+
+---
+
+### ListarNombre
+
+Filters and retrieves reservations by client name. This method enables searching for specific reservations.
+
+<ParamField path="BuscarNombreReserva" type="string" required>
+  The client name or partial name to search for
+</ParamField>
+
+<ParamField path="return" type="List<CE_Reservas>">
+  A list of reservations matching the search criteria
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Reservas cnReservas = new CN_Reservas();
+string busqueda = "Juan";
+List<CE_Reservas> reservasEncontradas = cnReservas.ListarNombre(busqueda);
+
+foreach (var reserva in reservasEncontradas)
+{
+    Console.WriteLine($"Found: {reserva.NombreCliente} - {reserva.FechaReserva:dd/MM/yyyy}");
+}
+```
+
+**Data Layer Call:**
+
+Calls `CD_Reservas.ListarNombre()` which executes the stored procedure `SP_Listar_Reservas_Nombre` with parameter `@Buscar`.
+
+```csharp
+public List<CE_Reservas> ListarNombre(string BuscarNombreReserva)
+{
+    return oCD_Reservas.ListarNombre(BuscarNombreReserva);
+}
+```
+
+## Entity Models
+
+### CE_Reservas
+
+The main reservation entity:
+
+```csharp
+public class CE_Reservas
+{
+    public int IdReserva { get; set; }
+    public int IdCancha { get; set; }
+    public int IdCliente { get; set; }
+    public int IdUsuario { get; set; }
+    public DateTime FechaReserva { get; set; }
+    public TimeSpan HoraInicio { get; set; }
+    public TimeSpan HoraFin { get; set; }
+    public string? NombreCliente { get; set; }
+    public string? NombreCancha { get; set; }
+    public string? Comentario { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+### ReservaViewModel
+
+View model used for creating reservations:
+
+```csharp
+public class ReservaViewModel
+{
+    public CE_Reservas Reserva { get; set; }
+    public List<CE_Clientes> ListaClientes { get; set; }
+    public List<CE_Canchas> ListaCanchas { get; set; }
+}
+```
+
+## Business Features
+
+- **Search Functionality**: The `ListarNombre()` method enables filtering reservations by client name for quick lookups.
+- **View Model Pattern**: Uses `ReservaViewModel` for insertions to provide additional context (available clients and courts) to the presentation layer.
+- **Time Management**: Handles both date (`DateTime`) and time (`TimeSpan`) types for precise reservation scheduling.
+
+## Related Components
+
+- [CD_Reservas](/api/data/reservas) - Data access layer
+- [CE_Reservas](/api/entities/reservas) - Entity model
+- [CN_Clientes](/api/business/clientes) - Client business logic
+- [CN_Canchas](/api/business/canchas) - Court business logic

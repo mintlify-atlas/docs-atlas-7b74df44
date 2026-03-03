@@ -1,80 +1,408 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get Canchas Deportivas running in your local environment in minutes
 ---
 
-## Get started in three steps
+## Get Started in Minutes
 
-Get your documentation site running locally and make your first customization.
+This guide will help you set up and run the Canchas Deportivas booking system quickly. You'll have a working application running locally with all core features operational.
 
-### Step 1: Set up your local environment
+<Note>
+  **Prerequisites**: Ensure you have .NET 8.0 SDK, SQL Server, and Visual Studio 2022 (or VS Code) installed on your machine.
+</Note>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+## Quick Setup
+
+<Steps>
+  <Step title="Clone the Repository">
+    Get the source code on your local machine:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```bash
+    git clone <repository-url>
+    cd canchas-deportivas
+    ```
+  </Step>
+
+  <Step title="Restore Dependencies">
+    Navigate to the solution directory and restore NuGet packages:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    ```bash
+    dotnet restore
+    ```
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    The solution includes these packages:
+    - `Microsoft.Data.SqlClient` (v6.1.2) - SQL Server data access
+    - `Microsoft.VisualStudio.Web.CodeGeneration.Design` (v8.0.7) - Code generation tools
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Configure Database Connection">
+    Update the connection string in `/source/capa_dato/CD_conexion.cs`:
+    
+    ```csharp capa_dato/CD_conexion.cs
+    private readonly SqlConnection conexion = new SqlConnection(
+        "Data Source=YOUR_SERVER_NAME;" +
+        "Initial Catalog=DB_canchasdeportivas;" +
+        "Integrated Security=True;" +
+        "Encrypt=True;" +
+        "Trust Server Certificate=True"
+    );
+    ```
+    
+    <Warning>
+      Replace `YOUR_SERVER_NAME` with your actual SQL Server instance name. For local SQL Server Express, this is typically `localhost\\SQLEXPRESS`.
+    </Warning>
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Create Database and Schema">
+    Execute the following SQL to create your database:
+    
+    ```sql
+    CREATE DATABASE DB_canchasdeportivas;
+    GO
+    
+    USE DB_canchasdeportivas;
+    GO
+    
+    -- Create Canchas table
+    CREATE TABLE Canchas (
+        IdCancha INT PRIMARY KEY IDENTITY(1,1),
+        Nombre NVARCHAR(100) NOT NULL,
+        Tipo NVARCHAR(50),
+        PrecioPorHora DECIMAL(10,2) NOT NULL,
+        Estado NVARCHAR(20)
+    );
+    
+    -- Create Clientes table
+    CREATE TABLE Clientes (
+        IdCliente INT PRIMARY KEY IDENTITY(1,1),
+        Nombre NVARCHAR(100) NOT NULL,
+        Telefono NVARCHAR(20),
+        Email NVARCHAR(100)
+    );
+    
+    -- Create Usuarios table
+    CREATE TABLE Usuarios (
+        IdUsuario INT PRIMARY KEY IDENTITY(1,1),
+        NombreUsuario NVARCHAR(50) NOT NULL,
+        Password NVARCHAR(255)
+    );
+    
+    -- Create Reservas table
+    CREATE TABLE Reservas (
+        IdReserva INT PRIMARY KEY IDENTITY(1,1),
+        IdCancha INT FOREIGN KEY REFERENCES Canchas(IdCancha),
+        IdCliente INT FOREIGN KEY REFERENCES Clientes(IdCliente),
+        IdUsuario INT FOREIGN KEY REFERENCES Usuarios(IdUsuario),
+        FechaReserva DATE NOT NULL,
+        HoraInicio TIME NOT NULL,
+        HoraFin TIME NOT NULL,
+        Comentario NVARCHAR(500),
+        Estado BIT DEFAULT 1
+    );
+    ```
+  </Step>
 
-### Step 3: Go live
+  <Step title="Create Required Stored Procedures">
+    The application uses stored procedures for data operations. Create the essential ones:
+    
+    ```sql
+    -- List all reservations with related data
+    CREATE PROCEDURE SP_Reservas_List
+    AS
+    BEGIN
+        SELECT 
+            r.IdReserva,
+            r.IdCancha,
+            r.IdCliente,
+            r.IdUsuario,
+            r.FechaReserva,
+            r.HoraInicio,
+            r.HoraFin,
+            r.Comentario,
+            r.Estado,
+            c.Nombre AS NombreCliente,
+            ca.Nombre AS NombreCancha
+        FROM Reservas r
+        INNER JOIN Clientes c ON r.IdCliente = c.IdCliente
+        INNER JOIN Canchas ca ON r.IdCancha = ca.IdCancha
+        ORDER BY r.FechaReserva DESC, r.HoraInicio DESC;
+    END;
+    GO
+    
+    -- Insert new reservation
+    CREATE PROCEDURE SP_Reservas_Insert
+        @IdCancha INT,
+        @IdCliente INT,
+        @IdUsuario INT,
+        @FechaReserva DATE,
+        @HoraInicio TIME,
+        @HoraFin TIME,
+        @Comentario NVARCHAR(500)
+    AS
+    BEGIN
+        INSERT INTO Reservas (IdCancha, IdCliente, IdUsuario, FechaReserva, HoraInicio, HoraFin, Comentario, Estado)
+        VALUES (@IdCancha, @IdCliente, @IdUsuario, @FechaReserva, @HoraInicio, @HoraFin, @Comentario, 1);
+    END;
+    GO
+    
+    -- Update existing reservation
+    CREATE PROCEDURE SP_Reservas_Update
+        @IdReserva INT,
+        @IdCancha INT,
+        @IdCliente INT,
+        @IdUsuario INT,
+        @FechaReserva DATE,
+        @HoraInicio TIME,
+        @HoraFin TIME,
+        @Comentario NVARCHAR(500),
+        @Estado BIT
+    AS
+    BEGIN
+        UPDATE Reservas
+        SET IdCancha = @IdCancha,
+            IdCliente = @IdCliente,
+            IdUsuario = @IdUsuario,
+            FechaReserva = @FechaReserva,
+            HoraInicio = @HoraInicio,
+            HoraFin = @HoraFin,
+            Comentario = @Comentario,
+            Estado = @Estado
+        WHERE IdReserva = @IdReserva;
+    END;
+    GO
+    
+    -- Delete reservation
+    CREATE PROCEDURE SP_Reservas_Delete
+        @Id INT
+    AS
+    BEGIN
+        DELETE FROM Reservas WHERE IdReserva = @Id;
+    END;
+    GO
+    
+    -- Search reservations by client name
+    CREATE PROCEDURE SP_Listar_Reservas_Nombre
+        @Buscar NVARCHAR(100)
+    AS
+    BEGIN
+        SELECT 
+            r.IdReserva,
+            r.IdCancha,
+            r.IdCliente,
+            r.IdUsuario,
+            r.FechaReserva,
+            r.HoraInicio,
+            r.HoraFin,
+            r.Comentario,
+            r.Estado,
+            c.Nombre AS NombreCliente,
+            ca.Nombre AS NombreCancha
+        FROM Reservas r
+        INNER JOIN Clientes c ON r.IdCliente = c.IdCliente
+        INNER JOIN Canchas ca ON r.IdCancha = ca.IdCancha
+        WHERE c.Nombre LIKE '%' + @Buscar + '%'
+        ORDER BY r.FechaReserva DESC;
+    END;
+    GO
+    ```
+    
+    <Note>
+      You'll need to create similar stored procedures for Canchas and Clientes tables. See the [Installation Guide](/installation) for the complete set.
+    </Note>
+  </Step>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+  <Step title="Add Sample Data">
+    Insert some test data to get started:
+    
+    ```sql
+    -- Add sample sports fields
+    INSERT INTO Canchas (Nombre, Tipo, PrecioPorHora, Estado)
+    VALUES 
+        ('Cancha Principal', 'Fútbol 11', 150.00, 'Disponible'),
+        ('Cancha Norte', 'Fútbol 7', 100.00, 'Disponible'),
+        ('Cancha Sur', 'Fútbol 5', 80.00, 'Disponible');
+    
+    -- Add sample clients
+    INSERT INTO Clientes (Nombre, Telefono, Email)
+    VALUES 
+        ('Juan Pérez', '555-0101', 'juan@example.com'),
+        ('María González', '555-0102', 'maria@example.com'),
+        ('Carlos Rodríguez', '555-0103', 'carlos@example.com');
+    
+    -- Add default user
+    INSERT INTO Usuarios (NombreUsuario, Password)
+    VALUES ('admin', 'admin123');
+    
+    -- Add sample reservation
+    INSERT INTO Reservas (IdCancha, IdCliente, IdUsuario, FechaReserva, HoraInicio, HoraFin, Comentario, Estado)
+    VALUES (1, 1, 1, GETDATE(), '18:00:00', '20:00:00', 'Partido amistoso', 1);
+    ```
+  </Step>
 
-## Next steps
+  <Step title="Build and Run">
+    Build the presentation layer project and run the application:
+    
+    ```bash
+    cd source/capa_presentacion
+    dotnet build
+    dotnet run
+    ```
+    
+    The application will start on `http://localhost:5000` (or the port specified in launchSettings.json).
+    
+    <CodeGroup>
+    ```bash Terminal Output
+    info: Microsoft.Hosting.Lifetime[14]
+          Now listening on: http://localhost:5000
+    info: Microsoft.Hosting.Lifetime[0]
+          Application started. Press Ctrl+C to shut down.
+    ```
+    </CodeGroup>
+  </Step>
 
-Now that you have your docs running, explore these key features:
+  <Step title="Verify Installation">
+    Open your browser and navigate to the application:
+    
+    - **Home**: `http://localhost:5000`
+    - **Reservations**: `http://localhost:5000/Reservas/ListarReservas`
+    - **Sports Fields**: `http://localhost:5000/Canchas`
+    - **Clients**: `http://localhost:5000/Clientes`
+    
+    You should see the sample data you inserted in Step 6.
+  </Step>
+</Steps>
+
+## Understanding the Application Flow
+
+Once running, here's how the application works:
 
 <CardGroup cols={2}>
+  <Card title="View Reservations" icon="list">
+    Navigate to `/Reservas/ListarReservas` to see all bookings with client names, field details, and time slots
+  </Card>
+  <Card title="Create Booking" icon="plus">
+    Use `/Reservas/InsertarReservas` to create new reservations with dropdowns for clients and fields
+  </Card>
+  <Card title="Search Functionality" icon="search">
+    Use `/Reservas/BuscarReservaNombre` to filter reservations by client name
+  </Card>
+  <Card title="Manage Fields" icon="futbol">
+    Access `/Canchas` to view and manage sports field configurations
+  </Card>
+</CardGroup>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+## Key Code Snippets
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+Here's how the reservation controller lists bookings:
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+```csharp capa_presentacion/Controllers/ReservasController.cs
+public ActionResult ListarReservas()
+{
+    try
+    {
+        if (!ModelState.IsValid)
+        {
+            throw new Exception("El estado del modelo no es válido.");
+        }
+        var olista = Reservas.Listar();
+        return View(olista);
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error al obtener la lista de reservas: " + ex.Message;
+        return View(new List<CE_Reservas>());
+    }
+}
+```
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+And here's how data is retrieved from the database:
 
+```csharp capa_dato/CD_Reservas.cs
+public List<CE_Reservas> Listar()
+{
+    var ListarReserva = new List<CE_Reservas>();
+    
+    using (var conexionAbierta = conexion.abrir_conexion())
+    {
+        using (var comando = new SqlCommand("SP_Reservas_List", conexionAbierta))
+        {
+            comando.CommandType = System.Data.CommandType.StoredProcedure;
+            using (var lector = comando.ExecuteReader())
+            {
+                while (lector.Read())
+                {
+                    ListarReserva.Add(new CE_Reservas
+                    {
+                        IdReserva = Convert.ToInt32(lector["IdReserva"]),
+                        IdCancha = Convert.ToInt32(lector["IdCancha"]),
+                        IdCliente = Convert.ToInt32(lector["IdCliente"]),
+                        FechaReserva = Convert.ToDateTime(lector["FechaReserva"]),
+                        HoraInicio = (TimeSpan)(lector["HoraInicio"]),
+                        HoraFin = (TimeSpan)(lector["HoraFin"]),
+                        NombreCliente = lector["Nombre"].ToString(),
+                        NombreCancha = lector["NombreCancha"].ToString(),
+                        Estado = Convert.ToBoolean(lector["Estado"])
+                    });
+                }
+            }
+        }
+        conexion.cerrar_conexion();
+        return ListarReserva;
+    }
+}
+```
+
+## Common Issues and Solutions
+
+<AccordionGroup>
+  <Accordion title="Connection String Error" icon="plug">
+    If you see connection errors, verify:
+    - SQL Server is running
+    - Server name in connection string is correct
+    - Windows Authentication is enabled or use SQL Server authentication
+    - Firewall allows connections to SQL Server
+  </Accordion>
+  
+  <Accordion title="Stored Procedure Not Found" icon="database">
+    Ensure all stored procedures are created in the correct database:
+    ```sql
+    USE DB_canchasdeportivas;
+    GO
+    SELECT name FROM sys.procedures;
+    ```
+    You should see: SP_Reservas_List, SP_Reservas_Insert, SP_Reservas_Update, SP_Reservas_Delete
+  </Accordion>
+  
+  <Accordion title="Build Errors" icon="triangle-exclamation">
+    Make sure you have .NET 8.0 SDK installed:
+    ```bash
+    dotnet --version
+    ```
+    Should return 8.0.x or higher.
+  </Accordion>
+  
+  <Accordion title="Port Already in Use" icon="network-wired">
+    If port 5000 is occupied, modify the port in `Properties/launchSettings.json` or let Kestrel assign a random port.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Complete Installation" icon="gear" href="/installation">
+    Set up all stored procedures, configure authentication, and production settings
+  </Card>
+  <Card title="Architecture Guide" icon="layer-group" href="/architecture/overview">
+    Learn about the three-tier architecture and how components interact
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/canchas-controller">
+    Explore all controllers, models, and data access methods
+  </Card>
+  <Card title="Database Setup" icon="database" href="/database/configuration">
+    Configure your database and stored procedures
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  You now have a working Canchas Deportivas installation! Explore the application and check out the detailed guides for more advanced configurations.
 </Note>

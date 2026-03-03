@@ -1,0 +1,192 @@
+---
+title: 'CN_Canchas'
+description: 'Business logic for managing sports courts (canchas)'
+---
+
+## Overview
+
+The `CN_Canchas` class provides business logic operations for managing sports courts in the system. It acts as an intermediary between the presentation layer and the data layer (`CD_Canchas`), handling court-related business rules and operations.
+
+**Namespace:** `capa_negocio`
+
+**Dependencies:**
+- `capa_entidad.CE_Canchas` - Court entity model
+- `capa_dato.CD_Canchas` - Data access layer for courts
+
+## Class Definition
+
+```csharp
+public class CN_Canchas
+{
+    CD_Canchas oCD_Canchas = new CD_Canchas();
+}
+```
+
+## Methods
+
+### ListarCanchas
+
+Retrieves a list of all sports courts from the database.
+
+<ParamField path="return" type="List<CE_Canchas>">
+  A list of all courts in the system
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Canchas cnCanchas = new CN_Canchas();
+List<CE_Canchas> canchas = cnCanchas.ListarCanchas();
+
+foreach (var cancha in canchas)
+{
+    Console.WriteLine($"Court: {cancha.Nombre}, Type: {cancha.Tipo}");
+}
+```
+
+**Data Layer Call:**
+
+This method calls `CD_Canchas.Listar()` which executes the stored procedure `SP_Canchas_List`.
+
+```csharp
+public List<CE_Canchas> ListarCanchas()
+{
+    oCD_Canchas = new CD_Canchas();
+    return oCD_Canchas.Listar();
+}
+```
+
+---
+
+### AgregarCancha
+
+Adds a new sports court to the system.
+
+<ParamField path="cancha" type="CE_Canchas" required>
+  The court object containing:
+  - `Nombre` (string) - Court name
+  - `Tipo` (string) - Court type (e.g., "Fútbol", "Tenis")
+  - `PrecioPorHora` (decimal) - Price per hour
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Canchas cnCanchas = new CN_Canchas();
+CE_Canchas nuevaCancha = new CE_Canchas
+{
+    Nombre = "Cancha Principal",
+    Tipo = "Fútbol",
+    PrecioPorHora = 50.00M
+};
+
+cnCanchas.AgregarCancha(nuevaCancha);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Canchas.AgregarCancha()` which executes the stored procedure `SP_Canchas_Insert` with the following parameters:
+- `@Nombre`
+- `@Tipo`
+- `@PrecioPorHora`
+
+```csharp
+public void AgregarCancha(CE_Canchas cancha)
+{
+    oCD_Canchas.AgregarCancha(cancha);
+}
+```
+
+---
+
+### Actualizar
+
+Updates an existing sports court's information.
+
+<ParamField path="cancha" type="CE_Canchas" required>
+  The court object with updated values:
+  - `IdCancha` (int) - Court ID to update
+  - `Nombre` (string) - Updated court name
+  - `Tipo` (string) - Updated court type
+  - `PrecioPorHora` (decimal) - Updated price per hour
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Canchas cnCanchas = new CN_Canchas();
+CE_Canchas canchaActualizada = new CE_Canchas
+{
+    IdCancha = 1,
+    Nombre = "Cancha Principal Renovada",
+    Tipo = "Fútbol 7",
+    PrecioPorHora = 60.00M
+};
+
+cnCanchas.Actualizar(canchaActualizada);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Canchas.ActualizarCancha()` which executes the stored procedure `SP_Canchas_Update` with parameters:
+- `@IdCancha`
+- `@Nombre`
+- `@Tipo`
+- `@PrecioPorHora`
+
+```csharp
+public void Actualizar(CE_Canchas cancha)
+{
+    oCD_Canchas.ActualizarCancha(cancha);
+}
+```
+
+---
+
+### Eliminar
+
+Deletes a sports court from the system.
+
+<ParamField path="id" type="int" required>
+  The ID of the court to delete
+</ParamField>
+
+**Example:**
+
+```csharp
+CN_Canchas cnCanchas = new CN_Canchas();
+int idCanchaEliminar = 5;
+
+cnCanchas.Eliminar(idCanchaEliminar);
+```
+
+**Data Layer Call:**
+
+Calls `CD_Canchas.EliminarCancha()` which executes the stored procedure `SP_Canchas_Delete` with parameter `@Id`.
+
+```csharp
+public void Eliminar(int id)
+{
+    oCD_Canchas.EliminarCancha(id);
+}
+```
+
+## Entity Model
+
+The `CE_Canchas` entity used by this business logic class:
+
+```csharp
+public class CE_Canchas
+{
+    public int IdCancha { get; set; }
+    public string? Nombre { get; set; }
+    public string? Tipo { get; set; }
+    public decimal PrecioPorHora { get; set; }
+    public string? Estado { get; set; }
+}
+```
+
+## Related Components
+
+- [CD_Canchas](/api/data/canchas) - Data access layer
+- [CE_Canchas](/api/entities/canchas) - Entity model

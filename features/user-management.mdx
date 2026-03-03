@@ -1,0 +1,361 @@
+---
+title: 'User Management'
+description: 'User authentication and account management'
+icon: 'user-shield'
+---
+
+## Overview
+
+The User Management system handles operator accounts that access the Canchas Deportivas platform. Users are the internal staff who manage fields, clients, and reservations.
+
+## User Entity
+
+Users are represented by the `CE_usuarios` entity:
+
+```csharp capa_entidad/CE_Usuarios.cs
+public class CE_usuarios
+{
+    public int IdUsuario { get; set; }
+    public string? Nombre { get; set; }
+    public string? Clave { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+<Note>
+The entity stores user credentials with a password field (`Clave`) and active status tracking.
+</Note>
+
+## Business Logic Layer
+
+The business layer provides validation and CRUD operations:
+
+```csharp capa_negocio/CN_Usuarios.cs
+public class CN_Usuarios
+{
+    CD_Usuarios oCD_Usuarios = new CD_Usuarios();
+
+    public List<CE_usuarios> Listar()
+    {
+        try
+        {
+            return oCD_Usuarios.ListarUsuarios();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error al obtener la lista de usuarios: " + ex.Message);
+        }
+    }
+}
+```
+
+## Create a New User
+
+The `Insertar` method includes comprehensive validation:
+
+```csharp capa_negocio/CN_Usuarios.cs
+public void Insertar(CE_usuarios usuario)
+{
+    // Validate username
+    if (string.IsNullOrWhiteSpace(usuario.Nombre))
+    {
+        throw new ArgumentException("El nombre de usuario no puede estar vacío.");
+    }
+    
+    // Validate password exists
+    if (string.IsNullOrWhiteSpace(usuario.Clave))
+    {
+        throw new ArgumentException("La contraseña es obligatoria.");
+    }
+
+    // Validate password length
+    if (usuario.Clave.Length < 6)
+    {
+        throw new ArgumentException("La contraseña debe tener al menos 6 caracteres.");
+    }
+
+    try
+    {
+        oCD_Usuarios.InsertarUsuarios(usuario);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception("Error al insertar el usuario: " + ex.Message);
+    }
+}
+```
+
+<Warning>
+Password validation requires a minimum of 6 characters. Consider implementing additional security measures like password hashing in production.
+</Warning>
+
+## Validation Rules
+
+<Steps>
+  <Step title="Username Validation">
+    Username cannot be null, empty, or whitespace only.
+    
+    ```csharp
+    if (string.IsNullOrWhiteSpace(usuario.Nombre))
+    {
+        throw new ArgumentException("El nombre de usuario no puede estar vacío.");
+    }
+    ```
+  </Step>
+  
+  <Step title="Password Required">
+    Password must be provided when creating a new user.
+    
+    ```csharp
+    if (string.IsNullOrWhiteSpace(usuario.Clave))
+    {
+        throw new ArgumentException("La contraseña es obligatoria.");
+    }
+    ```
+  </Step>
+  
+  <Step title="Password Length">
+    Password must be at least 6 characters long.
+    
+    ```csharp
+    if (usuario.Clave.Length < 6)
+    {
+        throw new ArgumentException("La contraseña debe tener al menos 6 caracteres.");
+    }
+    ```
+  </Step>
+</Steps>
+
+## Update User Information
+
+The update method validates the user ID and username:
+
+```csharp capa_negocio/CN_Usuarios.cs
+public void Actualizar(CE_usuarios usuario)
+{
+    // Validate user ID
+    if (usuario.IdUsuario <= 0)
+    {
+        throw new ArgumentException("Se requiere un ID de Usuario válido para actualizar.");
+    }
+
+    // Validate username
+    if (string.IsNullOrWhiteSpace(usuario.Nombre))
+    {
+        throw new ArgumentException("El nombre de usuario no puede estar vacío.");
+    }
+
+    try
+    {
+        oCD_Usuarios.ActualizarUsuarios(usuario);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception("Error al actualizar el usuario: " + ex.Message);
+    }
+}
+```
+
+<Note>
+The update method does not re-validate password length, allowing users to keep their existing passwords.
+</Note>
+
+## Delete a User
+
+The delete operation validates the user ID:
+
+```csharp capa_negocio/CN_Usuarios.cs
+public void Eliminar(int idUsuario)
+{
+    // Validate user ID
+    if (idUsuario <= 0)
+    {
+        throw new ArgumentException("Se requiere un ID de Usuario para eliminar.");
+    }
+
+    try
+    {
+        oCD_Usuarios.EliminarUsuarios(idUsuario);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception("Error al eliminar el usuario: " + ex.Message);
+    }
+}
+```
+
+<Warning>
+Be cautious when deleting users who may have created reservations. Consider soft deletion or status changes instead.
+</Warning>
+
+## User Tracking in Reservations
+
+Users are tracked in the reservation system through the `IdUsuario` field:
+
+```csharp capa_entidad/CE_Reservas.cs
+public class CE_Reservas
+{
+    public int IdReserva { get; set; }
+    public int IdCancha { get; set; }
+    public int IdCliente { get; set; }
+    public int IdUsuario { get; set; }  // Operator who created the reservation
+    // ... other properties
+}
+```
+
+In the reservation form, the user ID is typically set to the logged-in operator:
+
+```cshtml Views/Reservas/InsertarReservas.cshtml
+<div class="mb-3">
+    <label asp-for="Reserva.IdUsuario" class="form-label fw-bold">
+        Usuario (Operador)
+    </label>
+    <div class="input-group">
+        <span class="input-group-text">
+            <i class="bi bi-person-badge-fill"></i>
+        </span>
+        <input asp-for="Reserva.IdUsuario" value="1" 
+               class="form-control" readonly 
+               style="background-color: #e9ecef;" />
+    </div>
+</div>
+```
+
+<Note>
+The current implementation sets a default user ID. In a production system, this should be dynamically set based on the authenticated user's session.
+</Note>
+
+## Error Handling Pattern
+
+All user management operations follow a consistent error handling pattern:
+
+<Tabs>
+  <Tab title="Try-Catch Wrapper">
+    ```csharp
+    try
+    {
+        // Perform operation
+        oCD_Usuarios.InsertarUsuarios(usuario);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception("Error al insertar el usuario: " + ex.Message);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Validation Exceptions">
+    ```csharp
+    if (usuario.IdUsuario <= 0)
+    {
+        throw new ArgumentException("Se requiere un ID de Usuario válido.");
+    }
+    ```
+  </Tab>
+  
+  <Tab title="List Operations">
+    ```csharp
+    public List<CE_usuarios> Listar()
+    {
+        try
+        {
+            return oCD_Usuarios.ListarUsuarios();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error al obtener la lista de usuarios: " + ex.Message);
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Security Considerations
+
+<Warning>
+The following security enhancements should be implemented for production use:
+</Warning>
+
+<CardGroup cols={2}>
+  <Card title="Password Hashing" icon="lock">
+    Store hashed passwords instead of plain text using bcrypt or similar.
+  </Card>
+  
+  <Card title="Authentication" icon="key">
+    Implement proper login/logout functionality with session management.
+  </Card>
+  
+  <Card title="Authorization" icon="shield">
+    Add role-based access control to restrict actions based on user permissions.
+  </Card>
+  
+  <Card title="Password Policies" icon="check-double">
+    Enforce stronger password requirements including special characters and numbers.
+  </Card>
+</CardGroup>
+
+## User State Management
+
+The `Estado` boolean property tracks whether a user account is active:
+
+```csharp
+public bool Estado { get; set; }
+```
+
+This allows for soft deletion or temporary deactivation of user accounts without removing their historical data from reservations.
+
+## Integration with System
+
+Users integrate with the broader system through:
+
+- **Reservations**: Track which operator created each booking
+- **Audit Trail**: Maintain accountability for data changes
+- **Access Control**: Determine who can perform various operations
+
+## User Workflow
+
+<Steps>
+  <Step title="Create User Account">
+    Administrator creates a new user account with username and password.
+  </Step>
+  
+  <Step title="Validate Credentials">
+    System validates password meets minimum requirements.
+  </Step>
+  
+  <Step title="Activate Account">
+    User account is set to active status upon creation.
+  </Step>
+  
+  <Step title="Perform Operations">
+    User logs in and performs field, client, and reservation management tasks.
+  </Step>
+  
+  <Step title="Track Actions">
+    All reservations created by the user are tracked via IdUsuario.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Tip>
+When implementing user management in production:
+
+- Use a proven authentication library or framework
+- Implement password hashing with salt
+- Add login attempt limiting to prevent brute force attacks
+- Use HTTPS to protect credentials in transit
+- Implement proper session timeout mechanisms
+- Log all authentication and authorization events
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Reservation System" icon="calendar" href="/features/reservation-system">
+    See how users track reservations they create
+  </Card>
+  <Card title="Architecture Overview" icon="sitemap" href="/architecture/overview">
+    Understand the three-tier architecture
+  </Card>
+</CardGroup>

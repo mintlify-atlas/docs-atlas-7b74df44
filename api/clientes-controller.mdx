@@ -1,0 +1,371 @@
+---
+title: 'ClientesController'
+description: 'API reference for managing client operations'
+---
+
+## Overview
+
+The `ClientesController` handles all CRUD operations for client management in the system. It provides endpoints for listing, creating, updating, and deleting client records.
+
+**Namespace:** `capa_presentacion.Controllers`
+
+**Base Route:** `/Clientes`
+
+---
+
+## Methods
+
+### ListarClientes
+
+Retrieves a list of all clients in the system.
+
+```csharp
+public ActionResult ListarClientes()
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Clientes/ListarClientes`
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (200):** Returns a view with `List<CE_Clientes>` containing all clients
+- **Error:** Returns a view with an empty list and sets error message in `TempData["ErrorMessage"]`
+
+#### Response Model
+
+```csharp
+CE_Clientes {
+  int IdCliente
+  string Nombre
+  string Telefono
+  string Correo
+  bool Estado
+}
+```
+
+#### Error Handling
+
+- Validates `ModelState` before processing
+- Catches exceptions and stores error message in `TempData`
+- Returns empty list on error instead of throwing
+
+#### Usage Example
+
+```csharp
+// GET /Clientes/ListarClientes
+// Returns view with list of all clients
+```
+
+#### Source
+`Controllers/ClientesController.cs:14`
+
+---
+
+### InsertarCliente (GET)
+
+Displays the form for adding a new client.
+
+```csharp
+public ActionResult InsertarCliente()
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Clientes/InsertarCliente`
+
+#### Returns
+
+**Type:** `ActionResult`
+
+Returns the view for creating a new client.
+
+#### Usage Example
+
+```csharp
+// GET /Clientes/InsertarCliente
+// Displays the add client form
+```
+
+#### Source
+`Controllers/ClientesController.cs:33`
+
+---
+
+### InsertarClientes (POST)
+
+Creates a new client in the system.
+
+```csharp
+[HttpPost]
+public ActionResult InsertarClientes(CE_Clientes cliente)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Clientes/InsertarClientes`
+
+#### Parameters
+
+<ParamField body="cliente" type="CE_Clientes" required>
+  The client object to create
+  
+  **Properties:**
+  - `Nombre` (string): Full name of the client
+  - `Telefono` (string): Phone number
+  - `Correo` (string): Email address
+  - `Estado` (bool): Active status of the client
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarClientes` action
+- **Error (404):** Invalid model state - "No se encontro el modelo"
+- **Error (500):** Exception during creation - "Error al agregar el cliente: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="404" type="StatusCodeResult">
+  Model state is invalid
+  ```json
+  "No se encontro el modelo"
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during client creation
+  ```json
+  "Error al agregar el cliente: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Clientes/InsertarClientes
+// Content-Type: application/x-www-form-urlencoded
+
+var cliente = new CE_Clientes {
+    Nombre = "Juan Pérez",
+    Telefono = "+1234567890",
+    Correo = "juan.perez@example.com",
+    Estado = true
+};
+
+// On success: Redirects to /Clientes/ListarClientes
+```
+
+#### Notes
+
+- Action method name is `InsertarClientes` (plural) while the route parameter is `cliente` (singular)
+- Validates model state before processing
+
+#### Source
+`Controllers/ClientesController.cs:40`
+
+---
+
+### Actualizar (GET)
+
+Retrieves a specific client for editing.
+
+```csharp
+[HttpGet]
+public ActionResult Actualizar(int id)
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Clientes/Actualizar/{id}`
+
+#### Parameters
+
+<ParamField path="id" type="int" required>
+  The unique identifier of the client to update
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (200):** Returns view with the `CE_Clientes` object
+- **Error (404):** Client not found - "No se pudo actualizar el cliente con el id: {id}"
+
+#### Error Responses
+
+<ResponseField name="404" type="NotFoundResult">
+  Client with specified ID not found
+  ```json
+  "No se pudo actualizar el cliente con el id: {id}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// GET /Clientes/Actualizar/10
+// Returns view with client data for ID 10
+```
+
+#### Source
+`Controllers/ClientesController.cs:63`
+
+---
+
+### Actualizar (POST)
+
+Updates an existing client.
+
+```csharp
+public ActionResult Actualizar(CE_Clientes clientes)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Clientes/Actualizar`
+
+#### Parameters
+
+<ParamField body="clientes" type="CE_Clientes" required>
+  The client object with updated information
+  
+  **Properties:**
+  - `IdCliente` (int): ID of the client to update
+  - `Nombre` (string): Updated name
+  - `Telefono` (string): Updated phone
+  - `Correo` (string): Updated email
+  - `Estado` (bool): Updated active status
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarClientes` action
+- **Error (500):** Exception during update - "Error al actualizar la cancha: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during client update
+  ```json
+  "Error al actualizar la cancha: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Clientes/Actualizar
+// Content-Type: application/x-www-form-urlencoded
+
+var cliente = new CE_Clientes {
+    IdCliente = 10,
+    Nombre = "Juan Alberto Pérez",
+    Telefono = "+1234567890",
+    Correo = "juan.a.perez@example.com",
+    Estado = true
+};
+
+// On success: Redirects to /Clientes/ListarClientes
+```
+
+#### Notes
+
+- The method updates the client regardless of `ModelState.IsValid` status (lines 79-85)
+- Both validation paths lead to the same update operation
+- Error message references "cancha" instead of "cliente" (copy-paste from CanchasController)
+
+#### Source
+`Controllers/ClientesController.cs:75`
+
+---
+
+### Eliminar
+
+Deletes a client from the system.
+
+```csharp
+public ActionResult Eliminar(int id)
+```
+
+#### HTTP Method
+`POST` (inferred from usage pattern)
+
+#### Route
+`/Clientes/Eliminar`
+
+#### Parameters
+
+<ParamField body="id" type="int" required>
+  The unique identifier of the client to delete
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarClientes` action
+- **Error (500):** Exception during deletion - "Error al eliminar el cliente: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during client deletion
+  ```json
+  "Error al eliminar el cliente: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Clientes/Eliminar
+// Form data: id=10
+
+// On success: Redirects to /Clientes/ListarClientes
+```
+
+#### Notes
+
+- Includes try-catch error handling unlike the Canchas controller version
+- Returns appropriate error message to user
+
+#### Source
+`Controllers/ClientesController.cs:99`
+
+---
+
+## Dependencies
+
+- **Business Layer:** `CN_Clientes` from `capa_negocio`
+- **Entity Layer:** `CE_Clientes` from `capa_entidad`
+- **Framework:** ASP.NET Core MVC
+
+## Error Handling Strategy
+
+1. **Model Validation:** Checks `ModelState.IsValid` before processing requests
+2. **Try-Catch Blocks:** Wraps operations in exception handlers
+3. **User Feedback:** Uses `TempData` for error messages in views
+4. **Status Codes:** Returns appropriate HTTP status codes (404, 500)
+5. **Graceful Degradation:** Returns empty lists instead of error pages when listing fails
+
+## Known Issues
+
+- **Inconsistent Naming:** GET method is `InsertarCliente` (singular) but POST is `InsertarClientes` (plural)
+- **Error Message:** Update method error message references "cancha" instead of "cliente"
+- **Missing HTTP Attribute:** `Eliminar` method missing `[HttpPost]` attribute

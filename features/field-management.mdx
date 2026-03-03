@@ -1,0 +1,403 @@
+---
+title: 'Field Management'
+description: 'Manage sports fields with full CRUD operations'
+icon: 'futbol'
+---
+
+## Overview
+
+The Field Management system allows you to create, view, update, and delete sports fields (canchas). Each field has properties like name, type, hourly pricing, and status.
+
+## Field Entity
+
+Fields are represented by the `CE_Canchas` entity:
+
+```csharp capa_entidad/CE_Canchas.cs
+public class CE_Canchas
+{
+    public int IdCancha { get; set; }
+    public string? Nombre { get; set; }
+    public string? Tipo { get; set; }
+    public decimal PrecioPorHora { get; set; }
+    public string? Estado { get; set; }
+}
+```
+
+<Note>
+The field entity includes a price per hour property stored as a decimal for accurate financial calculations.
+</Note>
+
+## List All Fields
+
+### Controller Action
+
+The `ListarCanchas` action retrieves all fields from the database:
+
+```csharp capa_presentacion/Controllers/CanchasController.cs
+public ActionResult ListarCanchas()
+{
+    try
+    {
+        if (!ModelState.IsValid)
+        {
+            throw new Exception("El estado del modelo no es válido.");
+        }
+
+        var olista = Canchas.ListarCanchas();
+        return View(olista);
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error al obtener la lista de canchas: " + ex.Message;
+        return View(new List<CE_Canchas>());
+    }
+}
+```
+
+### View Interface
+
+The list view displays fields in a responsive table with action buttons:
+
+```cshtml Views/Canchas/ListarCanchas.cshtml
+<div class="card shadow border-0">
+    <div class="card-header bg-primary text-white py-3">
+        <h3 class="card-title mb-0">
+            <i class="bi bi-list-ul me-2"></i>Listado de Canchas
+        </h3>
+        <a asp-action="AgregarCancha" class="btn btn-light text-primary fw-bold">
+            <i class="bi bi-plus-lg"></i> Nueva Cancha
+        </a>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Cod.</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Precio por hora</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cancha in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@cancha.IdCancha</td>
+                        <td>@cancha.Nombre</td>
+                        <td>@cancha.Tipo</td>
+                        <td>$ @cancha.PrecioPorHora</td>
+                        <td class="text-center">
+                            <a asp-action="Actualizar" 
+                               asp-route-id="@cancha.IdCancha" 
+                               class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <form asp-action="Eliminar" method="post" 
+                                  asp-route-id="@cancha.IdCancha">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+```
+
+## Create a New Field
+
+<Steps>
+  <Step title="Display the Form">
+    Navigate to the add field page which renders an empty form:
+    
+    ```csharp
+    public ActionResult AgregarCancha()
+    {
+        return View();
+    }
+    ```
+  </Step>
+  
+  <Step title="Fill Field Details">
+    The form collects field information:
+    
+    ```cshtml Views/Canchas/AgregarCancha.cshtml
+    <form action="AgregarCancha" method="post">
+        <div class="mb-3">
+            <label asp-for="Nombre" class="form-label fw-bold">Nombre</label>
+            <input asp-for="Nombre" class="form-control" 
+                   placeholder="Ej. Cancha Norte" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Tipo" class="form-label fw-bold">Tipo</label>
+            <input asp-for="Tipo" class="form-control" 
+                   placeholder="Ej. Sintética" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="PrecioPorHora" class="form-label fw-bold">
+                Precio por Hora
+            </label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input asp-for="PrecioPorHora" class="form-control" 
+                       placeholder="0.00" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Agregar
+        </button>
+    </form>
+    ```
+  </Step>
+  
+  <Step title="Submit and Validate">
+    The POST action validates and saves the field:
+    
+    ```csharp capa_presentacion/Controllers/CanchasController.cs
+    [HttpPost]
+    public ActionResult AgregarCancha(CE_Canchas cancha)
+    {
+        try
+        {
+            if (!ModelState.IsValid) 
+            {
+                return StatusCode(404, $"No se encontro el modelo");
+            }
+
+            Canchas.AgregarCancha(cancha);
+            return RedirectToAction("ListarCanchas");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error al agregar la cancha: {ex.Message}");
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Update a Field
+
+### GET - Load Field Data
+
+Retrieve the field by ID and populate the form:
+
+```csharp capa_presentacion/Controllers/CanchasController.cs
+[HttpGet]
+public ActionResult Actualizar(int id)
+{
+    var lista = Canchas.ListarCanchas();
+    var cancha = lista.FirstOrDefault(c => c.IdCancha == id);
+
+    if (cancha == null)
+    {
+        return NotFound($"no se puedo actualizar la cancha con el id: {id}");
+    }
+    return View(cancha);
+}
+```
+
+### POST - Save Changes
+
+Process the updated field data:
+
+```csharp
+[HttpPost]
+public ActionResult Actualizar(CE_Canchas cancha)
+{
+    try
+    {
+        if (ModelState.IsValid)
+        {
+            Canchas.Actualizar(cancha);
+            return RedirectToAction("ListarCanchas");
+        }
+        Canchas.Actualizar(cancha);
+        return RedirectToAction("ListarCanchas");
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Error al actualizar la cancha: {ex.Message}");
+    }
+}
+```
+
+## Delete a Field
+
+The delete operation is a simple POST action:
+
+```csharp capa_presentacion/Controllers/CanchasController.cs
+[HttpPost]
+public ActionResult Eliminar(int id)
+{
+    Canchas.Eliminar(id);
+    return RedirectToAction("ListarCanchas");
+}
+```
+
+<Warning>
+Deleting a field is permanent. The system uses a confirmation dialog in the view before executing the delete action.
+</Warning>
+
+## Data Layer Operations
+
+All field operations use stored procedures for database access:
+
+<Tabs>
+  <Tab title="List">
+    ```csharp capa_dato/CD_Canchas.cs
+    public List<CE_Canchas> Listar()
+    {
+        var ListarCanchas = new List<CE_Canchas>();
+
+        using (var conexionAbierta = conexion.abrir_conexion())
+        {
+            using (var comando = new SqlCommand("SP_Canchas_List", conexionAbierta))
+            {
+                comando.CommandType = CommandType.StoredProcedure;
+                using (var lector = comando.ExecuteReader())
+                {
+                    while (lector.Read())
+                    {
+                        ListarCanchas.Add(new CE_Canchas
+                        {
+                            IdCancha = Convert.ToInt32(lector["IdCancha"]),
+                            Nombre = lector["Nombre"].ToString(),
+                            Tipo = lector["Tipo"].ToString(),
+                            PrecioPorHora = Convert.ToDecimal(lector["PrecioPorHora"]),
+                            Estado = lector["Estado"].ToString()
+                        });
+                    }
+                }
+            }
+            return ListarCanchas;
+        }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Insert">
+    ```csharp capa_dato/CD_Canchas.cs
+    public void AgregarCancha(CE_Canchas cE_Canchas)
+    {
+        using (var conexionAbierta = conexion.abrir_conexion())
+        {
+            using (var comando = new SqlCommand("SP_Canchas_Insert", conexionAbierta))
+            {
+                comando.CommandType = CommandType.StoredProcedure;
+                comando.Parameters.AddWithValue("@Nombre", cE_Canchas.Nombre);
+                comando.Parameters.AddWithValue("@Tipo", cE_Canchas.Tipo);
+                comando.Parameters.AddWithValue("@PrecioPorHora", cE_Canchas.PrecioPorHora);
+                comando.ExecuteNonQuery();
+            }
+        }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Update">
+    ```csharp capa_dato/CD_Canchas.cs
+    public void ActualizarCancha(CE_Canchas cE_Canchas)
+    {
+        using (var conexionAbierta = conexion.abrir_conexion())
+        {
+            using (var comando = new SqlCommand("SP_Canchas_Update", conexionAbierta))
+            {
+                comando.CommandType = CommandType.StoredProcedure;
+                comando.Parameters.AddWithValue("@IdCancha", cE_Canchas.IdCancha);
+                comando.Parameters.AddWithValue("@Nombre", cE_Canchas.Nombre);
+                comando.Parameters.AddWithValue("@Tipo", cE_Canchas.Tipo);
+                comando.Parameters.AddWithValue("@PrecioPorHora", cE_Canchas.PrecioPorHora);
+                comando.ExecuteNonQuery();
+            }
+        }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Delete">
+    ```csharp capa_dato/CD_Canchas.cs
+    public void EliminarCancha(int id)
+    {
+        using (SqlCommand comando = new SqlCommand("SP_Canchas_Delete", 
+                                                    conexion.abrir_conexion()))
+        {
+            comando.CommandType = CommandType.StoredProcedure;
+            comando.Parameters.Add(new SqlParameter("@Id", id));
+            comando.ExecuteNonQuery();
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Business Logic Layer
+
+The business layer acts as an intermediary:
+
+```csharp capa_negocio/CN_Canchas.cs
+public class CN_Canchas
+{
+    CD_Canchas oCD_Canchas = new CD_Canchas();
+
+    public List<CE_Canchas> ListarCanchas()
+    {
+        oCD_Canchas = new CD_Canchas();
+        return oCD_Canchas.Listar();
+    }
+
+    public void AgregarCancha(CE_Canchas cancha)
+    {
+        oCD_Canchas.AgregarCancha(cancha);
+    }
+
+    public void Actualizar(CE_Canchas cancha)
+    {
+        oCD_Canchas.ActualizarCancha(cancha);
+    }
+
+    public void Eliminar(int id)
+    {
+        oCD_Canchas.EliminarCancha(id);
+    }
+}
+```
+
+## User Workflow
+
+<Steps>
+  <Step title="Access Field Management">
+    Navigate to the field management section from the main menu.
+  </Step>
+  
+  <Step title="View All Fields">
+    The list view displays all registered fields with their details and status.
+  </Step>
+  
+  <Step title="Create or Modify">
+    Click "Nueva Cancha" to add a new field, or use the edit button to modify existing fields.
+  </Step>
+  
+  <Step title="Manage Pricing">
+    Set hourly rates for each field type to calculate reservation costs.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Client Management" icon="users" href="/features/client-management">
+    Learn how to manage clients who book fields
+  </Card>
+  <Card title="Reservation System" icon="calendar" href="/features/reservation-system">
+    Create reservations linking fields and clients
+  </Card>
+</CardGroup>

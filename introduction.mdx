@@ -1,0 +1,183 @@
+---
+title: Canchas Deportivas
+description: A comprehensive ASP.NET Core MVC system for managing sports field bookings, clients, and reservations
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.png"
+  alt="Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.png"
+  alt="Hero Dark"
+/>
+
+## Welcome to Canchas Deportivas
+
+Canchas Deportivas is a full-featured sports field booking management system built with ASP.NET Core 8.0 MVC. The application uses a three-tier architecture pattern (Presentation, Business, and Data layers) to provide a robust solution for managing sports facilities, client information, and reservation scheduling.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get up and running in minutes with our step-by-step guide
+  </Card>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Detailed installation and configuration instructions
+  </Card>
+  <Card
+    title="Architecture"
+    icon="layer-group"
+    href="/architecture/overview"
+  >
+    Learn about the three-tier architecture and project structure
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api/canchas-controller"
+  >
+    Explore controllers, models, and data access patterns
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={3}>
+  <Card title="Field Management" icon="futbol">
+    Create and manage multiple sports fields with pricing, types, and availability status
+  </Card>
+  <Card title="Client Registry" icon="users">
+    Maintain a comprehensive database of clients with contact information
+  </Card>
+  <Card title="Reservation System" icon="calendar-check">
+    Schedule and track bookings with time slots, dates, and field assignments
+  </Card>
+  <Card title="Search & Filter" icon="magnifying-glass">
+    Find reservations by client name and filter data across the system
+  </Card>
+  <Card title="Three-Tier Architecture" icon="layer-group">
+    Clean separation of concerns with Presentation, Business, and Data layers
+  </Card>
+  <Card title="SQL Server Integration" icon="database">
+    Robust data persistence using stored procedures and Microsoft.Data.SqlClient
+  </Card>
+</CardGroup>
+
+## Technology Stack
+
+The application is built on modern Microsoft technologies:
+
+- **Framework**: .NET 8.0
+- **Pattern**: ASP.NET Core MVC
+- **Database**: Microsoft SQL Server
+- **Data Access**: ADO.NET with Microsoft.Data.SqlClient
+- **Architecture**: Three-tier (Presentation, Business, Data)
+
+<Note>
+  The system uses stored procedures for all database operations, providing better performance and security.
+</Note>
+
+## Project Structure
+
+The solution is organized into four main projects:
+
+```
+Canchas Deportivas Solution
+├── capa_presentacion/    # MVC presentation layer
+│   ├── Controllers/      # ReservasController, CanchasController, ClientesController
+│   ├── Views/           # Razor views
+│   └── wwwroot/         # Static files (CSS, JS, images)
+├── capa_negocio/        # Business logic layer
+│   └── CN_*.cs          # Business rules and validation
+├── capa_dato/           # Data access layer
+│   ├── CD_conexion.cs   # Database connection management
+│   └── CD_*.cs          # Data operations with stored procedures
+└── capa_entidad/        # Entity models
+    └── CE_*.cs          # Domain entities and ViewModels
+```
+
+## Core Entities
+
+The system manages the following core entities:
+
+<AccordionGroup>
+  <Accordion title="Reservas (Reservations)" icon="calendar">
+    Manages field bookings with date, time slots, client assignment, and field allocation.
+    
+    **Key Properties:**
+    - IdReserva, IdCancha, IdCliente, IdUsuario
+    - FechaReserva, HoraInicio, HoraFin
+    - Comentario, Estado
+  </Accordion>
+  
+  <Accordion title="Canchas (Sports Fields)" icon="futbol">
+    Represents individual sports fields available for booking.
+    
+    **Key Properties:**
+    - IdCancha, Nombre, Tipo
+    - PrecioPorHora
+    - Estado (availability status)
+  </Accordion>
+  
+  <Accordion title="Clientes (Clients)" icon="user">
+    Stores client information for making reservations.
+    
+    **Key Properties:**
+    - IdCliente, Nombre
+    - Contact information
+    - Reservation history
+  </Accordion>
+  
+  <Accordion title="Usuarios (Users)" icon="user-shield">
+    System users who create and manage reservations.
+    
+    **Key Properties:**
+    - IdUsuario
+    - User credentials and roles
+  </Accordion>
+</AccordionGroup>
+
+## What You'll Build
+
+With Canchas Deportivas, you can:
+
+1. **Manage Sports Facilities**: Add, update, and configure multiple sports fields with pricing and availability
+2. **Track Clients**: Maintain a complete client database with search and filtering capabilities
+3. **Schedule Bookings**: Create reservations with specific date/time ranges and field assignments
+4. **Monitor Operations**: View all bookings, search by client name, and track reservation status
+5. **Ensure Data Integrity**: Leverage stored procedures and three-tier architecture for reliable operations
+
+<Warning>
+  This application requires Microsoft SQL Server and a properly configured database with the required stored procedures.
+</Warning>
+
+## Next Steps
+
+<Steps>
+  <Step title="Quick Start">
+    Follow the [Quickstart Guide](/quickstart) to get the application running in your local environment
+  </Step>
+  <Step title="Configure Database">
+    Set up your SQL Server connection and create the required database schema
+  </Step>
+  <Step title="Explore Features">
+    Learn about the architecture and explore the API reference to understand the system's capabilities
+  </Step>
+</Steps>
+
+## Getting Help
+
+Need assistance? Here are some resources:
+
+- Check the [Installation Guide](/installation) for detailed setup instructions
+- Review the [Architecture Documentation](/architecture) to understand the system design
+- Explore the [API Reference](/api-reference) for code examples and implementation details

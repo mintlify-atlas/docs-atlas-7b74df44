@@ -1,0 +1,134 @@
+---
+title: 'CE_Reservas'
+description: 'Entity representing court reservations made by clients'
+---
+
+## Overview
+
+The `CE_Reservas` entity represents a reservation for a sports court. It links clients, courts, and users while managing the reservation schedule and status.
+
+## Properties
+
+<ParamField name="IdReserva" type="int" required>
+  Unique identifier for the reservation
+</ParamField>
+
+<ParamField name="IdCancha" type="int" required>
+  Foreign key referencing the court being reserved (CE_Canchas.IdCancha)
+</ParamField>
+
+<ParamField name="IdCliente" type="int" required>
+  Foreign key referencing the client making the reservation (CE_Clientes.IdCliente)
+</ParamField>
+
+<ParamField name="IdUsuario" type="int" required>
+  Foreign key referencing the user who created the reservation (CE_Usuarios.IdUsuario)
+</ParamField>
+
+<ParamField name="FechaReserva" type="DateTime" required>
+  Date when the court is reserved
+</ParamField>
+
+<ParamField name="HoraInicio" type="TimeSpan" required>
+  Start time of the reservation
+</ParamField>
+
+<ParamField name="HoraFin" type="TimeSpan" required>
+  End time of the reservation
+</ParamField>
+
+<ParamField name="NombreCliente" type="string">
+  Name of the client (denormalized for quick access)
+</ParamField>
+
+<ParamField name="NombreCancha" type="string">
+  Name of the court (denormalized for quick access)
+</ParamField>
+
+<ParamField name="Comentario" type="string">
+  Optional comments or notes about the reservation
+</ParamField>
+
+<ParamField name="Estado" type="bool" required>
+  Indicates if the reservation is active (`true`) or cancelled (`false`)
+</ParamField>
+
+## Entity Definition
+
+```csharp
+public class CE_Reservas
+{
+    public int IdReserva { get; set; }
+    public int IdCancha { get; set; }
+    public int IdCliente { get; set; }
+    public int IdUsuario { get; set; }
+    public DateTime FechaReserva { get; set; }
+    public TimeSpan HoraInicio { get; set; }
+    public TimeSpan HoraFin { get; set; }
+    public string? NombreCliente { get; set; }
+    public String? NombreCancha { get; set; }
+    public string? Comentario { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+## ViewModels
+
+### ReservaViewModel
+
+View model used for reservation management operations, combining a reservation with lists of available clients and courts.
+
+<ParamField name="Reserva" type="CE_Reservas" required>
+  Single reservation instance for operations
+</ParamField>
+
+<ParamField name="ListaClientes" type="List<CE_Clientes>" required>
+  Collection of all clients available for selection
+</ParamField>
+
+<ParamField name="ListaCanchas" type="List<CE_Canchas>" required>
+  Collection of all courts available for reservation
+</ParamField>
+
+```csharp
+public class ReservaViewModel
+{
+    public CE_Reservas Reserva { get; set; }
+    public List<CE_Clientes> ListaClientes { get; set; }
+    public List<CE_Canchas> ListaCanchas { get; set; }
+}
+```
+
+## Usage Example
+
+```csharp
+// Creating a new reservation
+var reserva = new CE_Reservas
+{
+    IdReserva = 1,
+    IdCancha = 1,
+    IdCliente = 1,
+    IdUsuario = 1,
+    FechaReserva = DateTime.Now.Date,
+    HoraInicio = new TimeSpan(14, 0, 0), // 2:00 PM
+    HoraFin = new TimeSpan(16, 0, 0),    // 4:00 PM
+    NombreCliente = "Juan Pérez",
+    NombreCancha = "Cancha Fútbol 1",
+    Comentario = "Torneo local",
+    Estado = true
+};
+
+// Using the ViewModel
+var viewModel = new ReservaViewModel
+{
+    Reserva = reserva,
+    ListaClientes = new List<CE_Clientes>(),
+    ListaCanchas = new List<CE_Canchas>()
+};
+```
+
+## Related Entities
+
+- [CE_Clientes](/api/entities/clientes) - Client making the reservation
+- [CE_Canchas](/api/entities/canchas) - Court being reserved
+- [CE_Usuarios](/api/entities/usuarios) - User creating the reservation

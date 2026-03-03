@@ -1,0 +1,62 @@
+---
+title: 'CE_Clientes'
+description: 'Entity representing clients who make court reservations'
+---
+
+## Overview
+
+The `CE_Clientes` entity represents a client in the sports court reservation system. It stores customer contact information and status.
+
+## Properties
+
+<ParamField name="IdCliente" type="int" required>
+  Unique identifier for the client
+</ParamField>
+
+<ParamField name="Nombre" type="string">
+  Full name of the client
+</ParamField>
+
+<ParamField name="Telefono" type="string">
+  Phone number of the client for contact purposes
+</ParamField>
+
+<ParamField name="Correo" type="string">
+  Email address of the client
+</ParamField>
+
+<ParamField name="Estado" type="bool" required>
+  Indicates if the client account is active (`true`) or inactive (`false`)
+</ParamField>
+
+## Entity Definition
+
+```csharp
+public class CE_Clientes
+{
+    public int IdCliente { get; set; }
+    public string? Nombre { get; set; }
+    public string? Telefono { get; set; }
+    public string? Correo { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+## Usage Example
+
+```csharp
+// Creating a new client
+var cliente = new CE_Clientes
+{
+    IdCliente = 1,
+    Nombre = "Juan Pérez",
+    Telefono = "+52 123 456 7890",
+    Correo = "juan.perez@example.com",
+    Estado = true
+};
+```
+
+## Related Entities
+
+- [CE_Reservas](/api/entities/reservas) - Reservations made by clients
+- [CE_Canchas](/api/entities/canchas) - Courts available for reservation

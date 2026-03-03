@@ -1,0 +1,424 @@
+---
+title: 'Client Management'
+description: 'Manage client profiles and contact information'
+icon: 'users'
+---
+
+## Overview
+
+The Client Management system handles customer profiles including contact information and status tracking. Clients are linked to reservations to track who is booking which fields.
+
+## Client Entity
+
+Clients are represented by the `CE_Clientes` entity:
+
+```csharp capa_entidad/CE_Clientes.cs
+public class CE_Clientes
+{
+    public int IdCliente { get; set; }
+    public string? Nombre { get; set; }
+    public string? Telefono { get; set; }
+    public string? Correo { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+<Note>
+The `Estado` property tracks whether a client account is active or inactive.
+</Note>
+
+## List All Clients
+
+### Controller Action
+
+The `ListarClientes` action retrieves all clients:
+
+```csharp capa_presentacion/Controllers/ClientesController.cs
+public ActionResult ListarClientes()
+{
+    try
+    {
+        if (!ModelState.IsValid)
+        {
+            throw new Exception("El estado del modelo no es válido.");
+        }
+        var olista = Clientes.Listar();
+        return View(olista);
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error al obtener la lista de clientes: " + ex.Message;
+        return View(new List<CE_Clientes>());
+    }
+}
+```
+
+### View Interface
+
+The list view displays clients with status badges:
+
+```cshtml Views/Clientes/ListarClientes.cshtml
+<div class="card shadow border-0">
+    <div class="card-header bg-primary text-white py-3">
+        <h3 class="card-title mb-0">
+            <i class="bi bi-people-fill me-2"></i>Lista de Clientes
+        </h3>
+        <a asp-action="InsertarCliente" class="btn btn-light text-primary fw-bold">
+            <i class="bi bi-person-plus-fill"></i> Nuevo Cliente
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Cod.</th>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Correo</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cliente in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@cliente.IdCliente</td>
+                        <td>
+                            <i class="bi bi-person-circle text-muted me-2"></i>
+                            @cliente.Nombre
+                        </td>
+                        <td>@cliente.Telefono</td>
+                        <td>@cliente.Correo</td>
+                        <td class="text-center">
+                            @if (cliente.Estado)
+                            {
+                                <span class="badge bg-success rounded-pill">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger rounded-pill">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <a asp-action="Actualizar" 
+                               asp-route-id="@cliente.IdCliente" 
+                               class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <form asp-action="Eliminar" method="post" 
+                                  asp-route-id="@cliente.IdCliente">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+```
+
+<Note>
+The view includes logic to display active/inactive status using Bootstrap badge components.
+</Note>
+
+## Create a New Client
+
+<Steps>
+  <Step title="Display the Form">
+    The GET action returns an empty form:
+    
+    ```csharp capa_presentacion/Controllers/ClientesController.cs
+    public ActionResult InsertarCliente()
+    {
+        return View();
+    }
+    ```
+  </Step>
+  
+  <Step title="Submit Client Data">
+    The POST action validates and saves the client:
+    
+    ```csharp
+    [HttpPost]
+    public ActionResult InsertarClientes(CE_Clientes cliente)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return StatusCode(404, $"No se encontro el modelo");
+            }
+            Clientes.Insertar(cliente);
+            return RedirectToAction("ListarClientes");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error al agregar el cliente: {ex.Message}");
+        }
+    }
+    ```
+  </Step>
+  
+  <Step title="Redirect to List">
+    After successful creation, the user is redirected to the client list view.
+  </Step>
+</Steps>
+
+## Update Client Information
+
+### GET - Load Client Data
+
+Retrieve the client by ID:
+
+```csharp capa_presentacion/Controllers/ClientesController.cs
+[HttpGet]
+public ActionResult Actualizar(int id)
+{
+    var oCliente = Clientes.Listar();
+    var cliente = oCliente.FirstOrDefault(c => c.IdCliente == id);
+
+    if (cliente == null)
+    {
+        return NotFound($"No se pudo actualizar el cliente con el id: {id}");
+    }
+    return View(cliente);
+}
+```
+
+### POST - Save Changes
+
+Process the updated client data:
+
+```csharp
+public ActionResult Actualizar(CE_Clientes clientes)
+{
+    try
+    {
+        if (ModelState.IsValid)
+        {
+            Clientes.Actualizar(clientes);
+            return RedirectToAction("ListarClientes");
+        }
+        Clientes.Actualizar(clientes);
+        return RedirectToAction("ListarClientes");
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Error al actualizar la cancha: {ex.Message}");
+    }
+}
+```
+
+## Delete a Client
+
+The delete operation includes error handling:
+
+```csharp capa_presentacion/Controllers/ClientesController.cs
+public ActionResult Eliminar(int id)
+{
+    try
+    {
+        Clientes.Eliminar(id);
+        return RedirectToAction("ListarClientes");
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Error al eliminar el cliente: {ex.Message}");
+    }
+}
+```
+
+<Warning>
+Before deleting a client, ensure they have no active reservations to maintain data integrity.
+</Warning>
+
+## Data Layer Operations
+
+All client operations use stored procedures:
+
+<Tabs>
+  <Tab title="List">
+    ```csharp capa_dato/CD_Clientes.cs
+    public List<CE_Clientes> ListarClientes()
+    {
+        var ListarClientes = new List<CE_Clientes>();
+        using (var conexionAbierta = conexion.abrir_conexion())
+        {
+            using (var comando = new SqlCommand("SP_Clientes_List", conexionAbierta))
+            {
+                comando.CommandType = CommandType.StoredProcedure;
+                using (var lector = comando.ExecuteReader())
+                {
+                    while (lector.Read())
+                    {
+                        ListarClientes.Add(new CE_Clientes
+                        {
+                            IdCliente = Convert.ToInt32(lector["IdCliente"]),
+                            Nombre = lector["Nombre"].ToString(),
+                            Telefono = lector["Telefono"].ToString(),
+                            Correo = lector["Correo"].ToString(),
+                            Estado = Convert.ToBoolean(lector["Estado"])
+                        });
+                    }
+                }
+            }
+            return ListarClientes;
+        }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Insert">
+    ```csharp capa_dato/CD_Clientes.cs
+    public void InsertarClientes(CE_Clientes cE_Clientes)
+    {
+        using (var conexionAbierta = conexion.abrir_conexion())
+        {
+            using (var comando = new SqlCommand("SP_Clientes_Insert", conexionAbierta))
+            {
+                comando.CommandType = CommandType.StoredProcedure;
+                comando.Parameters.AddWithValue("@Nombre", cE_Clientes.Nombre);
+                comando.Parameters.AddWithValue("@Telefono", cE_Clientes.Telefono);
+                comando.Parameters.AddWithValue("@Correo", cE_Clientes.Correo);
+                comando.ExecuteNonQuery();
+            }
+        }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Update">
+    ```csharp capa_dato/CD_Clientes.cs
+    public void ActualizarClientes(CE_Clientes cE_Clientes)
+    {
+        using (var conexionAbierta = conexion.abrir_conexion())
+        {
+            using (var comando = new SqlCommand("SP_Clientes_Update", conexionAbierta))
+            {
+                comando.CommandType = CommandType.StoredProcedure;
+                comando.Parameters.AddWithValue("@IdCliente", cE_Clientes.IdCliente);
+                comando.Parameters.AddWithValue("@Nombre", cE_Clientes.Nombre);
+                comando.Parameters.AddWithValue("@Telefono", cE_Clientes.Telefono);
+                comando.Parameters.AddWithValue("@Correo", cE_Clientes.Correo);
+                comando.Parameters.AddWithValue("@Estado", cE_Clientes.Estado);
+                comando.ExecuteNonQuery();
+            }
+        }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Delete">
+    ```csharp capa_dato/CD_Clientes.cs
+    public void EliminarClientes(int Id)
+    {
+        using (var conexionAbierta = conexion.abrir_conexion())
+        {
+            using (var comando = new SqlCommand("SP_Clientes_Delete", conexionAbierta))
+            {
+                comando.CommandType = CommandType.StoredProcedure;
+                comando.Parameters.AddWithValue("@id", Id);
+                comando.ExecuteNonQuery();
+            }
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Business Logic Layer
+
+The business layer provides validation and coordination:
+
+```csharp capa_negocio/CN_Clientes.cs
+public class CN_Clientes
+{
+    CD_Clientes oCD_Clientes = new CD_Clientes();
+
+    public List<CE_Clientes> Listar()
+    {
+        List<CE_Clientes> lista = oCD_Clientes.ListarClientes();
+        if (lista == null)
+        {
+            return new List<CE_Clientes>();
+        }
+        return lista;
+    }
+
+    public void Insertar(CE_Clientes cliente)
+    {
+        oCD_Clientes.InsertarClientes(cliente);
+    }
+
+    public void Actualizar(CE_Clientes cliente)
+    {
+        oCD_Clientes.ActualizarClientes(cliente);
+    }
+
+    public void Eliminar(int id)
+    {
+        oCD_Clientes.EliminarClientes(id);
+    }
+}
+```
+
+## Integration with Reservations
+
+Clients are linked to reservations through the reservation creation form:
+
+```cshtml
+<select asp-for="Reserva.IdCliente" class="form-select">
+    <option value="">-- Seleccione un Cliente --</option>
+    @if (Model.ListaClientes != null)
+    {
+        foreach (var cliente in Model.ListaClientes)
+        {
+            <option value="@cliente.IdCliente">@cliente.Nombre</option>
+        }
+    }
+</select>
+<a asp-controller="Clientes" asp-action="InsertarCliente" 
+   class="btn btn-light text-primary fw-bold">
+    <i class="bi bi-person-plus-fill"></i> Nuevo Cliente
+</a>
+```
+
+<Note>
+The reservation form includes a quick link to create new clients without leaving the reservation workflow.
+</Note>
+
+## User Workflow
+
+<Steps>
+  <Step title="Navigate to Clients">
+    Access the client management section from the main navigation.
+  </Step>
+  
+  <Step title="View Client List">
+    Browse all registered clients with their contact information and status.
+  </Step>
+  
+  <Step title="Add or Edit">
+    Create new clients or update existing profiles with current contact details.
+  </Step>
+  
+  <Step title="Track Status">
+    Toggle client status between active and inactive as needed.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Reservation System" icon="calendar" href="/features/reservation-system">
+    Create reservations for your clients
+  </Card>
+  <Card title="Field Management" icon="futbol" href="/features/field-management">
+    Manage the fields clients can book
+  </Card>
+</CardGroup>

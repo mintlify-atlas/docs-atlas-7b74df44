@@ -1,0 +1,352 @@
+---
+title: 'CanchasController'
+description: 'API reference for managing sports field (canchas) operations'
+---
+
+## Overview
+
+The `CanchasController` handles all CRUD operations for sports fields (canchas) in the system. It provides endpoints for listing, creating, updating, and deleting field records.
+
+**Namespace:** `capa_presentacion.Controllers`
+
+**Base Route:** `/Canchas`
+
+---
+
+## Methods
+
+### ListarCanchas
+
+Retrieves a list of all sports fields in the system.
+
+```csharp
+public ActionResult ListarCanchas()
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Canchas/ListarCanchas`
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (200):** Returns a view with `List<CE_Canchas>` containing all sports fields
+- **Error:** Returns a view with an empty list and sets error message in `TempData["ErrorMessage"]`
+
+#### Response Model
+
+```csharp
+CE_Canchas {
+  int IdCancha
+  string Nombre
+  string Tipo
+  decimal PrecioPorHora
+  string Estado
+}
+```
+
+#### Error Handling
+
+- Validates `ModelState` before processing
+- Catches exceptions and stores error message in `TempData`
+- Returns empty list on error instead of throwing
+
+#### Usage Example
+
+```csharp
+// GET /Canchas/ListarCanchas
+// Returns view with list of all canchas
+```
+
+#### Source
+`Controllers/CanchasController.cs:17`
+
+---
+
+### AgregarCancha (GET)
+
+Displays the form for adding a new sports field.
+
+```csharp
+public ActionResult AgregarCancha()
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Canchas/AgregarCancha`
+
+#### Returns
+
+**Type:** `ActionResult`
+
+Returns the view for creating a new cancha.
+
+#### Usage Example
+
+```csharp
+// GET /Canchas/AgregarCancha
+// Displays the add cancha form
+```
+
+#### Source
+`Controllers/CanchasController.cs:43`
+
+---
+
+### AgregarCancha (POST)
+
+Creates a new sports field in the system.
+
+```csharp
+[HttpPost]
+public ActionResult AgregarCancha(CE_Canchas cancha)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Canchas/AgregarCancha`
+
+#### Parameters
+
+<ParamField body="cancha" type="CE_Canchas" required>
+  The cancha object to create
+  
+  **Properties:**
+  - `Nombre` (string): Name of the sports field
+  - `Tipo` (string): Type of field (e.g., "Fútbol", "Basketball")
+  - `PrecioPorHora` (decimal): Hourly rental price
+  - `Estado` (string): Current status of the field
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarCanchas` action
+- **Error (404):** Invalid model state - "No se encontro el modelo"
+- **Error (500):** Exception during creation - "Error al agregar la cancha: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="404" type="StatusCodeResult">
+  Model state is invalid
+  ```json
+  "No se encontro el modelo"
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during cancha creation
+  ```json
+  "Error al agregar la cancha: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Canchas/AgregarCancha
+// Content-Type: application/x-www-form-urlencoded
+
+var cancha = new CE_Canchas {
+    Nombre = "Cancha Principal",
+    Tipo = "Fútbol 11",
+    PrecioPorHora = 50.00m,
+    Estado = "Disponible"
+};
+
+// On success: Redirects to /Canchas/ListarCanchas
+```
+
+#### Source
+`Controllers/CanchasController.cs:54`
+
+---
+
+### Actualizar (GET)
+
+Retrieves a specific sports field for editing.
+
+```csharp
+[HttpGet]
+public ActionResult Actualizar(int id)
+```
+
+#### HTTP Method
+`GET`
+
+#### Route
+`/Canchas/Actualizar/{id}`
+
+#### Parameters
+
+<ParamField path="id" type="int" required>
+  The unique identifier of the cancha to update
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (200):** Returns view with the `CE_Canchas` object
+- **Error (404):** Cancha not found - "no se puedo actualizar la cancha con el id: {id}"
+
+#### Error Responses
+
+<ResponseField name="404" type="NotFoundResult">
+  Cancha with specified ID not found
+  ```json
+  "no se puedo actualizar la cancha con el id: {id}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// GET /Canchas/Actualizar/5
+// Returns view with cancha data for ID 5
+```
+
+#### Source
+`Controllers/CanchasController.cs:79`
+
+---
+
+### Actualizar (POST)
+
+Updates an existing sports field.
+
+```csharp
+[HttpPost]
+public ActionResult Actualizar(CE_Canchas cancha)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Canchas/Actualizar`
+
+#### Parameters
+
+<ParamField body="cancha" type="CE_Canchas" required>
+  The cancha object with updated information
+  
+  **Properties:**
+  - `IdCancha` (int): ID of the cancha to update
+  - `Nombre` (string): Updated name
+  - `Tipo` (string): Updated type
+  - `PrecioPorHora` (decimal): Updated price
+  - `Estado` (string): Updated status
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+- **Success (302):** Redirects to `ListarCanchas` action
+- **Error (500):** Exception during update - "Error al actualizar la cancha: {ex.Message}"
+
+#### Error Responses
+
+<ResponseField name="500" type="StatusCodeResult">
+  Error during cancha update
+  ```json
+  "Error al actualizar la cancha: {error message}"
+  ```
+</ResponseField>
+
+#### Usage Example
+
+```csharp
+// POST /Canchas/Actualizar
+// Content-Type: application/x-www-form-urlencoded
+
+var cancha = new CE_Canchas {
+    IdCancha = 5,
+    Nombre = "Cancha Principal Renovada",
+    Tipo = "Fútbol 11",
+    PrecioPorHora = 60.00m,
+    Estado = "Disponible"
+};
+
+// On success: Redirects to /Canchas/ListarCanchas
+```
+
+#### Notes
+
+- The method updates the cancha regardless of `ModelState.IsValid` status (lines 99-105)
+- Both validation paths lead to the same update operation
+
+#### Source
+`Controllers/CanchasController.cs:95`
+
+---
+
+### Eliminar
+
+Deletes a sports field from the system.
+
+```csharp
+[HttpPost]
+public ActionResult Eliminar(int id)
+```
+
+#### HTTP Method
+`POST`
+
+#### Route
+`/Canchas/Eliminar`
+
+#### Parameters
+
+<ParamField body="id" type="int" required>
+  The unique identifier of the cancha to delete
+</ParamField>
+
+#### Returns
+
+**Type:** `ActionResult`
+
+**Success (302):** Redirects to `ListarCanchas` action
+
+#### Usage Example
+
+```csharp
+// POST /Canchas/Eliminar
+// Form data: id=5
+
+// On success: Redirects to /Canchas/ListarCanchas
+```
+
+#### Notes
+
+- No error handling implemented
+- Assumes the business layer handles validation
+- Direct redirect after deletion
+
+#### Source
+`Controllers/CanchasController.cs:121`
+
+---
+
+## Dependencies
+
+- **Business Layer:** `CN_Canchas` from `capa_negocio`
+- **Entity Layer:** `CE_Canchas` from `capa_entidad`
+- **Framework:** ASP.NET Core MVC
+
+## Error Handling Strategy
+
+1. **Model Validation:** Checks `ModelState.IsValid` before processing requests
+2. **Try-Catch Blocks:** Wraps operations in exception handlers
+3. **User Feedback:** Uses `TempData` for error messages in views
+4. **Status Codes:** Returns appropriate HTTP status codes (404, 500)
+5. **Graceful Degradation:** Returns empty lists instead of error pages when listing fails

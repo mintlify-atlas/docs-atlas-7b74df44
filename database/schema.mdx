@@ -1,0 +1,178 @@
+---
+title: 'Database Schema'
+description: 'Database schema and table structures for Canchas Deportivas'
+---
+
+## Overview
+
+The Canchas Deportivas application uses SQL Server as its database management system. The database is named `DB_canchasdeportivas` and contains tables for managing users, clients, courts (canchas), and reservations.
+
+## Database Tables
+
+### Usuarios (Users)
+
+Stores system user accounts with authentication credentials.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| IdUsuario | int | Primary key, auto-increment |
+| Nombre | nvarchar | Username for authentication |
+| Clave | nvarchar | Password (hashed) |
+| Estado | bit | Active status (true/false) |
+
+**Entity Class**: `CE_usuarios`
+
+```csharp
+public class CE_usuarios
+{
+    public int IdUsuario { get; set; }
+    public string? Nombre { get; set; }
+    public string? Clave { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+### Clientes (Clients)
+
+Stores client information for making reservations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| IdCliente | int | Primary key, auto-increment |
+| Nombre | nvarchar | Client full name |
+| Telefono | nvarchar | Contact phone number |
+| Correo | nvarchar | Email address |
+| Estado | bit | Active status (true/false) |
+
+**Entity Class**: `CE_Clientes`
+
+```csharp
+public class CE_Clientes
+{
+    public int IdCliente { get; set; }
+    public string? Nombre { get; set; }
+    public string? Telefono { get; set; }
+    public string? Correo { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+### Canchas (Courts)
+
+Stores sports court information with pricing.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| IdCancha | int | Primary key, auto-increment |
+| Nombre | nvarchar | Court name |
+| Tipo | nvarchar | Type of court (e.g., futbol, basketball) |
+| PrecioPorHora | decimal | Hourly rental price |
+| Estado | nvarchar | Court status |
+
+**Entity Class**: `CE_Canchas`
+
+```csharp
+public class CE_Canchas
+{
+    public int IdCancha { get; set; }
+    public string? Nombre { get; set; }
+    public string? Tipo { get; set; }
+    public decimal PrecioPorHora { get; set; }
+    public string? Estado { get; set; }
+}
+```
+
+### Reservas (Reservations)
+
+Stores court reservations with time slots.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| IdReserva | int | Primary key, auto-increment |
+| IdCancha | int | Foreign key to Canchas table |
+| IdCliente | int | Foreign key to Clientes table |
+| IdUsuario | int | Foreign key to Usuarios table |
+| FechaReserva | datetime | Reservation date |
+| HoraInicio | time | Start time |
+| HoraFin | time | End time |
+| Comentario | nvarchar | Additional notes |
+| Estado | bit | Active status (true/false) |
+
+**Entity Class**: `CE_Reservas`
+
+```csharp
+public class CE_Reservas
+{
+    public int IdReserva { get; set; }
+    public int IdCancha { get; set; }
+    public int IdCliente { get; set; }
+    public int IdUsuario { get; set; }
+    public DateTime FechaReserva { get; set; }
+    public TimeSpan HoraInicio { get; set; }
+    public TimeSpan HoraFin { get; set; }
+    public string? NombreCliente { get; set; }
+    public String? NombreCancha { get; set; }
+    public string? Comentario { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+## Relationships
+
+- **Reservas** has foreign key relationships to:
+  - **Canchas** (IdCancha) - One court can have many reservations
+  - **Clientes** (IdCliente) - One client can make many reservations
+  - **Usuarios** (IdUsuario) - One user can create many reservations
+
+## Entity Relationships Diagram
+
+```
+┌─────────────┐
+│  Usuarios   │
+├─────────────┤
+│ IdUsuario PK│
+│ Nombre      │
+│ Clave       │
+│ Estado      │
+└──────┬──────┘
+       │
+       │ 1:N
+       │
+┌──────┴──────┐     ┌─────────────┐
+│  Reservas   │────▶│  Clientes   │
+├─────────────┤ N:1 ├─────────────┤
+│ IdReserva PK│     │ IdCliente PK│
+│ IdCancha  FK│     │ Nombre      │
+│ IdCliente FK│     │ Telefono    │
+│ IdUsuario FK│     │ Correo      │
+│ FechaReserva│     │ Estado      │
+│ HoraInicio  │     └─────────────┘
+│ HoraFin     │
+│ Comentario  │
+│ Estado      │
+└──────┬──────┘
+       │
+       │ N:1
+       ▼
+┌─────────────┐
+│   Canchas   │
+├─────────────┤
+│ IdCancha  PK│
+│ Nombre      │
+│ Tipo        │
+│ PrecioPorHor│
+│ Estado      │
+└─────────────┘
+```
+
+## Data Access Layer
+
+The application uses a three-tier architecture with dedicated data access classes:
+
+- `CD_Usuarios` - User data operations
+- `CD_Clientes` - Client data operations
+- `CD_Canchas` - Court data operations
+- `CD_Reservas` - Reservation data operations
+- `CD_TiposReservas` - Reservation types operations
+
+All data access classes inherit from `CD_conexion` for database connectivity.
