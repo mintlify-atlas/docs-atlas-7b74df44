@@ -1,0 +1,180 @@
+---
+title: 'CN_Usuarios'
+description: 'Business logic for managing system users'
+---
+
+## Overview
+
+The `CN_Usuarios` class handles the business logic for user management operations. It validates user data, enforces password policies, and coordinates with the data layer for database operations.
+
+## Methods
+
+### Listar()
+
+Retrieves all users from the database.
+
+**Returns:** `List<CE_usuarios>` - List of all system users
+
+**Example:**
+```csharp
+CN_Usuarios cnUsuarios = new CN_Usuarios();
+List<CE_usuarios> usuarios = cnUsuarios.Listar();
+```
+
+**Data Layer Call:**
+- Calls `CD_Usuarios.ListarUsuarios()`
+- Executes stored procedure `SP_Usuarios_List`
+
+---
+
+### Insertar(CE_usuarios)
+
+Adds a new user to the system with validation.
+
+<ParamField path="usuario" type="CE_usuarios" required>
+  The user object to insert with the following validated properties:
+  - `Nombre` (string) - Required, cannot be empty
+  - `Clave` (string) - Required, minimum 6 characters
+  - `Estado` (bool) - User active status
+</ParamField>
+
+**Business Rules:**
+- Username (`Nombre`) cannot be empty or whitespace
+- Password (`Clave`) is mandatory and must be at least 6 characters
+- Throws `ArgumentException` if validation fails
+
+**Example:**
+```csharp
+CN_Usuarios cnUsuarios = new CN_Usuarios();
+CE_usuarios nuevoUsuario = new CE_usuarios
+{
+    Nombre = "admin",
+    Clave = "securePassword123",
+    Estado = true
+};
+
+cnUsuarios.Insertar(nuevoUsuario);
+```
+
+**Source:** `capa_negocio/CN_Usuarios.cs:29-61`
+
+**Data Layer Call:**
+- Calls `CD_Usuarios.InsertarUsuarios()`
+- Executes stored procedure `SP_Usuarios_Insert`
+
+<Warning>
+  Passwords should be hashed before being passed to this method. The current implementation does not include password hashing - this should be added in production.
+</Warning>
+
+---
+
+### Actualizar(CE_usuarios)
+
+Updates an existing user's information.
+
+<ParamField path="usuario" type="CE_usuarios" required>
+  The user object with updated information:
+  - `IdUsuario` (int) - Required, must be greater than 0
+  - `Nombre` (string) - Required, cannot be empty
+  - `Clave` (string) - Optional for updates
+  - `Estado` (bool) - User active status
+</ParamField>
+
+**Business Rules:**
+- User ID must be valid (greater than 0)
+- Username cannot be empty
+- Throws `ArgumentException` if validation fails
+
+**Example:**
+```csharp
+CN_Usuarios cnUsuarios = new CN_Usuarios();
+CE_usuarios usuario = new CE_usuarios
+{
+    IdUsuario = 1,
+    Nombre = "admin_updated",
+    Clave = "newPassword123",
+    Estado = true
+};
+
+cnUsuarios.Actualizar(usuario);
+```
+
+**Source:** `capa_negocio/CN_Usuarios.cs:64-87`
+
+**Data Layer Call:**
+- Calls `CD_Usuarios.ActualizarUsuarios()`
+- Executes stored procedure `SP_Usuarios_Update`
+
+---
+
+### Eliminar(int)
+
+Removes a user from the system.
+
+<ParamField path="idUsuario" type="int" required>
+  The ID of the user to delete. Must be greater than 0.
+</ParamField>
+
+**Business Rules:**
+- User ID must be valid (greater than 0)
+- Throws `ArgumentException` if validation fails
+
+**Example:**
+```csharp
+CN_Usuarios cnUsuarios = new CN_Usuarios();
+cnUsuarios.Eliminar(1);
+```
+
+**Source:** `capa_negocio/CN_Usuarios.cs:90-106`
+
+**Data Layer Call:**
+- Calls `CD_Usuarios.EliminarUsuarios()`
+- Executes stored procedure `SP_Usuarios_Delete`
+
+<Note>
+  Consider implementing soft deletes (setting Estado to false) instead of hard deletes to maintain data integrity and audit trails.
+</Note>
+
+## Password Validation Rules
+
+The business layer enforces the following password policy:
+
+<Steps>
+  <Step title="Required">
+    Password cannot be null or empty
+  </Step>
+  <Step title="Minimum Length">
+    Password must be at least 6 characters long
+  </Step>
+</Steps>
+
+<Warning>
+  The current password policy is minimal. For production systems, implement stronger requirements:
+  - Minimum 8-12 characters
+  - Mix of uppercase, lowercase, numbers, and special characters
+  - Password hashing using bcrypt or PBKDF2
+  - Password complexity validation
+</Warning>
+
+## Entity Model
+
+```csharp
+public class CE_usuarios
+{
+    public int IdUsuario { get; set; }
+    public string? Nombre { get; set; }
+    public string? Clave { get; set; }
+    public bool Estado { get; set; }
+}
+```
+
+## Related Components
+
+<CardGroup cols={2}>
+  <Card title="CE_Usuarios Entity" icon="cube" href="/api/entities/usuarios">
+    View the user entity structure
+  </Card>
+  <Card title="User Management Feature" icon="users" href="/features/user-management">
+    Learn about the user management feature
+  </Card>
+</CardGroup>

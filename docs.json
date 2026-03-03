@@ -80,7 +80,8 @@
             "pages": [
               "api/business/canchas",
               "api/business/clientes",
-              "api/business/reservas"
+              "api/business/reservas",
+              "api/business/usuarios"
             ]
           }
         ]
